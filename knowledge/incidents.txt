@@ -1,0 +1,26 @@
+Incident: Payment Service High Latency
+Symptoms: p99 API latency above 2000ms.
+Possible cause: Database connection pool exhaustion.
+Recommended checks:
+1. Check active database connections.
+2. Check slow database queries.
+3. Check application CPU and memory.
+4. Check recent deployments.
+
+Incident: High API Error Rate
+Symptoms: HTTP 5xx error rate above 5%.
+Possible cause: Downstream service failure.
+Recommended checks:
+1. Check downstream service health.
+2. Check application logs.
+3. Check recent deployments.
+4. Check network connectivity.
+
+Incident: High CPU Usage
+Symptoms: Application CPU usage above 90%.
+Possible cause: Traffic spike or expensive application processing.
+Recommended checks:
+1. Check request traffic.
+2. Check expensive endpoints.
+3. Check application logs.
+4. Check recent deployments.
