@@ -18,13 +18,13 @@ def test_metrics_include_rank_and_mrr():
     ]
     def retriever(query, knowledge):
         if query == "one":
-            return {"matches": [{"excerpt": "correct"}]}
+            return {"matches": [{"excerpt": "Incident: correct\nSymptoms: sample"}]}
         if query == "two":
-            return {"matches": [{"excerpt": "wrong"}, {"excerpt": "correct"}]}
-        return {"matches": [{"excerpt": "wrong"}]}
-    report = evaluation.evaluate_cases(cases, "", retriever=retriever)
+            return {"matches": [{"excerpt": "Incident: wrong\nSymptoms: sample"}, {"excerpt": "Incident: correct\nSymptoms: sample"}]}
+        return {"matches": [{"excerpt": "Incident: wrong\nSymptoms: sample"}]}
+    report = evaluation.evaluate_cases(cases, "Incident: correct\nSymptoms: sample\n\nIncident: wrong\nSymptoms: sample", retriever=retriever)
     assert report["cases"] == 3
-    assert report["hit_at_3"] == pytest.approx(2 / 3)
+    assert report["hit_at_k"] == pytest.approx(2 / 3)
     assert report["mrr_at_k"] == pytest.approx(0.5)
     assert [row["rank"] for row in report["results"]] == [1, 2, None]
 
@@ -45,5 +45,27 @@ def test_labeled_36_case_fixture_produces_report():
     assert len({case["id"] for case in cases}) == 44
     assert all(label in knowledge for case in cases for label in case.get("expected_phrases", [case.get("expected_phrase")]) if label)
     assert {case["category"] for case in cases} == {"direct", "paraphrase", "negative", "ambiguous"}
-    assert 0 <= report["hit_at_3"] <= 1
+    assert 0 <= report["hit_at_k"] <= 1
     assert 0 <= report["mrr_at_k"] <= 1
+
+
+def test_k_one_does_not_claim_hit_at_three():
+    cases = [{"id": "x", "query": "x", "category": "direct", "expected_phrase": "A"}]
+    def retriever(query, knowledge):
+        return {"matches": [{"excerpt": "Incident: B"}, {"excerpt": "Incident: A"}]}
+    report = evaluation.evaluate_cases(cases, "Incident: A\n\nIncident: B", retriever=retriever, k=1)
+    assert report["hit_at_k"] == 0
+    assert report["k"] == 1
+    assert "hit_at_3" not in report
+
+
+def test_negative_empty_labels_and_abstention():
+    cases = [{"id": "none", "query": "unrelated", "category": "negative", "expected_phrases": []}]
+    report = evaluation.evaluate_cases(cases, "Incident: A", retriever=lambda q, k: {"matches": []})
+    assert report["negative_abstention_rate"] == 1
+
+
+def test_rejects_unrecognized_incident_chunk():
+    cases = [{"id": "x", "query": "x", "category": "direct", "expected_phrase": "A"}]
+    with pytest.raises(ValueError):
+        evaluation.evaluate_cases(cases, "Incident: A", retriever=lambda q, k: {"matches": [{"excerpt": "Incident: OTHER"}]})
