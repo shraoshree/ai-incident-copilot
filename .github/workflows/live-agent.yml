@@ -25,5 +25,5 @@ jobs:
       - name: Verify live function calling
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: gemini-2.5-flash
+          GEMINI_MODEL: gemini-3.8-flash
         run: python -m pytest -q -m live test_live_agent.py
