@@ -34,7 +34,11 @@ logger = logging.getLogger("incident-copilot")
 
 app = FastAPI()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+def get_gemini_client():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY is not configured")
+    return genai.Client(api_key=api_key)
 
 INCIDENTS_FILE = "data/incidents.json"
 
@@ -145,7 +149,7 @@ Keep the analysis concise and useful for an on-call engineer.
                 incident.service
             )
 
-            response = client.models.generate_content(
+            response = get_gemini_client().models.generate_content(
                 model="gemini-3.6-flash",
                 contents=prompt,
                 config={
@@ -342,7 +346,7 @@ def receive_agent_incident(incident: Incident):
     tool_trace = []
     try:
         result = investigate_with_tools(
-            client=client,
+            client=get_gemini_client(),
             model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
             incident=incident.model_dump(),
             knowledge_text=load_knowledge(),
