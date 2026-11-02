@@ -1,0 +1,7 @@
+[
+  {
+    "id": "db-connections",
+    "query": "payment service high latency database connection pool exhaustion",
+    "expected_phrase": "Payment Service High Latency"
+  }
+]
