@@ -118,12 +118,12 @@ GitHub Actions additionally runs integration tests against a **real pgvector-ena
 
 | Test metric | Keyword | Semantic |
 | --- | ---: | ---: |
-| Hit@1 | Pending test run | Pending live run |
-| Hit@3 | Pending test run | Pending live run |
-| MRR@3 | Pending test run | Pending live run |
-| Negative abstention | Pending test run | Pending live run |
+| Hit@1 | 53.3% | 43.3% |
+| Hit@3 | 70.0% | 43.3% |
+| MRR@3 | 0.600 | 0.433 |
+| Negative abstention | 100% | 100% |
 
-No live semantic comparison is claimed until the indexed database evaluation succeeds.
+**Verified test run:** 21 indexed records; 33 test queries (30 positive, 3 negative); dev-calibrated similarity threshold 0.7332. On the 18 paraphrased test queries, keyword Hit@1 was 27.8% and semantic Hit@1 was 5.6%. Semantic retrieval underperformed the keyword baseline in this evaluation. [GitHub Actions run](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41395773496).
 
 ```bash
 python evals/evaluate.py --backend keyword --split test --output evals/results.json
