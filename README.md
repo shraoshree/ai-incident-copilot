@@ -111,7 +111,7 @@ python evals/evaluate.py
 
 GitHub Actions additionally runs integration tests against a **real pgvector-enabled PostgreSQL service**, covering similarity ranking, idempotent indexing, query limits, and fallback behavior. A separate opt-in workflow exercises Gemini function calling with a repository secret.
 
-The retrieval evaluation reports **Hit@3** and **MRR@3** over 36 synthetic labeled queries across three historical incident categories, including direct descriptions and paraphrases. The benchmark is reproducible but is **not a production accuracy benchmark**: only three source records are indexed, so Hit@3 alone can overstate retrieval quality. MRR@3 provides a more discriminating ranking measure.
+The retrieval evaluation reports **Hit@3** and **MRR@3** over **44 synthetic queries**: 36 labeled positive examples (15 direct and 21 paraphrased), four out-of-domain negatives and four multi-label ambiguous examples. The knowledge base contains **21 historical incident records**, including 18 distractors. Report **Hit@1, Hit@3 and MRR@3** by category, plus negative-query abstention. These author-written examples are a development benchmark, not held-out or production accuracy. Semantic scores require separately indexing the full corpus and running `python evals/evaluate.py --backend both` with a configured database and embedding API; the default offline run measures keyword retrieval only.
 
 ## Tech stack
 
