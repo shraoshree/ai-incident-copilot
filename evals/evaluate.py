@@ -88,6 +88,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--backend", choices=["keyword", "semantic", "both"], default="keyword")
     parser.add_argument("--k", type=int, default=3)
+    parser.add_argument("--split", choices=["dev", "test", "all"], default="test")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--min-similarity", type=float, default=None,
                         help="Calibrated cosine similarity cutoff; do not tune on held-out test cases")
@@ -98,6 +99,8 @@ def main():
     cases = json.loads((ROOT / "evals/retrieval_cases.json").read_text())
     knowledge = (ROOT / "knowledge/incidents.txt").read_text()
     corpus = records(knowledge)
+    if args.split != "all":
+        cases = [case for case in cases if case["split"] == args.split]
     reports = {}
     if args.backend in ("keyword", "both"):
         reports["keyword"] = evaluate_cases(cases, knowledge, k=args.k, backend="keyword")
@@ -105,16 +108,15 @@ def main():
         if not os.getenv("DATABASE_URL") or not os.getenv("GEMINI_API_KEY"):
             parser.error("Semantic evaluation requires DATABASE_URL, GEMINI_API_KEY and an indexed corpus")
         verify_index(corpus)
-        from vector_store import search
+        from vector_store import search, similarity_threshold
+        threshold = args.min_similarity if args.min_similarity is not None else similarity_threshold()
         def semantic(query, _):
             time.sleep(args.delay)
-            rows = search(query, top_k=args.k)
-            if args.min_similarity is not None:
-                rows = [row for row in rows if row["score"] >= args.min_similarity]
+            rows = search(query, top_k=args.k, min_similarity=threshold)
             return {"matches": [{"excerpt": row["content"]} for row in rows]}
         reports["semantic"] = evaluate_cases(cases, knowledge, retriever=semantic, k=args.k, backend="semantic")
-        reports["semantic"]["min_similarity"] = args.min_similarity
-        reports["semantic"]["abstention_configured"] = args.min_similarity is not None
+        reports["semantic"]["min_similarity"] = threshold
+        reports["semantic"]["abstention_configured"] = threshold is not None
     output = json.dumps(reports, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
