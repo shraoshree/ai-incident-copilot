@@ -37,7 +37,7 @@ def test_empty_and_duplicate_cases_are_rejected():
         evaluation.evaluate_cases(repeated, "")
 
 
-def test_labeled_36_case_fixture_produces_report():
+def test_labeled_44_case_fixture_produces_report():
     cases = json.loads((ROOT / "evals/retrieval_cases.json").read_text())
     knowledge = (ROOT / "knowledge/incidents.txt").read_text()
     report = evaluation.evaluate_cases(cases, knowledge)
@@ -69,3 +69,14 @@ def test_rejects_unrecognized_incident_chunk():
     cases = [{"id": "x", "query": "x", "category": "direct", "expected_phrase": "A"}]
     with pytest.raises(ValueError):
         evaluation.evaluate_cases(cases, "Incident: A", retriever=lambda q, k: {"matches": [{"excerpt": "Incident: OTHER"}]})
+
+
+def test_all_misses_and_negative_nonabstention():
+    cases = [
+        {"id": "miss", "query": "a", "category": "direct", "expected_phrase": "A"},
+        {"id": "false_positive", "query": "b", "category": "negative", "expected_phrases": []},
+    ]
+    report = evaluation.evaluate_cases(cases, "Incident: A\n\nIncident: B", retriever=lambda q, k: {"matches": [{"excerpt": "Incident: B"}]})
+    assert report["hit_at_1"] == 0
+    assert report["mrr_at_k"] == 0
+    assert report["negative_abstention_rate"] == 0
