@@ -3,5 +3,30 @@
     "id": "db-connections",
     "query": "payment service high latency database connection pool exhaustion",
     "expected_phrase": "Payment Service High Latency"
+  },
+  {
+    "id": "api-errors",
+    "query": "HTTP 5xx error rate downstream service failure",
+    "expected_phrase": "High API Error Rate"
+  },
+  {
+    "id": "cpu-saturation",
+    "query": "application CPU usage traffic spike expensive processing",
+    "expected_phrase": "High CPU Usage"
+  },
+  {
+    "id": "db-synonym-hard",
+    "query": "connection starvation exhausted SQL connections",
+    "expected_phrase": "Payment Service High Latency"
+  },
+  {
+    "id": "downstream-synonym-hard",
+    "query": "dependency outage causes server errors",
+    "expected_phrase": "High API Error Rate"
+  },
+  {
+    "id": "cpu-synonym-hard",
+    "query": "compute saturation from inefficient handlers",
+    "expected_phrase": "High CPU Usage"
   }
 ]
