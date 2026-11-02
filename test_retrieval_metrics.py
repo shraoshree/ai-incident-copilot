@@ -12,9 +12,9 @@ spec.loader.exec_module(evaluation)
 
 def test_metrics_include_rank_and_mrr():
     cases = [
-        {"id": "first", "query": "one", "expected_phrase": "correct"},
-        {"id": "second", "query": "two", "expected_phrase": "correct"},
-        {"id": "missing", "query": "three", "expected_phrase": "correct"},
+        {"id": "first", "query": "one", "expected_phrase": "correct", "category": "direct"},
+        {"id": "second", "query": "two", "expected_phrase": "correct", "category": "direct"},
+        {"id": "missing", "query": "three", "expected_phrase": "correct", "category": "direct"},
     ]
     def retriever(query, knowledge):
         if query == "one":
@@ -32,7 +32,7 @@ def test_metrics_include_rank_and_mrr():
 def test_empty_and_duplicate_cases_are_rejected():
     with pytest.raises(ValueError):
         evaluation.evaluate_cases([], "")
-    repeated = [{"id": "x", "query": "a", "expected_phrase": "b"}] * 2
+    repeated = [{"id": "x", "query": "a", "expected_phrase": "b", "category": "direct"}] * 2
     with pytest.raises(ValueError):
         evaluation.evaluate_cases(repeated, "")
 
@@ -41,9 +41,9 @@ def test_labeled_36_case_fixture_produces_report():
     cases = json.loads((ROOT / "evals/retrieval_cases.json").read_text())
     knowledge = (ROOT / "knowledge/incidents.txt").read_text()
     report = evaluation.evaluate_cases(cases, knowledge)
-    assert report["cases"] == 36
-    assert len({case["id"] for case in cases}) == 36
-    assert all(case["expected_phrase"] in knowledge for case in cases)
-    assert {case["category"] for case in cases} == {"direct", "paraphrase"}
+    assert report["cases"] == 44
+    assert len({case["id"] for case in cases}) == 44
+    assert all(label in knowledge for case in cases for label in case.get("expected_phrases", [case.get("expected_phrase")]) if label)
+    assert {case["category"] for case in cases} == {"direct", "paraphrase", "negative", "ambiguous"}
     assert 0 <= report["hit_at_3"] <= 1
     assert 0 <= report["mrr_at_k"] <= 1
