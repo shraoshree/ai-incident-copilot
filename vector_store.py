@@ -131,14 +131,16 @@ def retrieve_or_fallback(query, knowledge_text):
         except Exception:
             import logging
             logging.getLogger(__name__).exception("Vector retrieval failed; using local knowledge")
+    return {"backend": "keyword", "matches": keyword_search(query, knowledge_text)}
+
+
+def keyword_search(query, knowledge_text, top_k=3):
+    if not 1 <= top_k <= 10:
+        raise ValueError("top_k must be between 1 and 10")
     terms = {word.strip(".,:;!?()").lower() for word in query.split() if len(word) > 4}
-    blocks = [part.strip() for part in knowledge_text.split("\n\n") if part.strip()]
+    blocks = [part.strip() for part in knowledge_text.split("\\n\\n") if part.strip()]
     ranked = sorted(
         ((sum(term in block.lower() for term in terms), block) for block in blocks),
-        key=lambda item: item[0],
-        reverse=True,
+        key=lambda item: item[0], reverse=True,
     )
-    return {"backend": "keyword", "matches": [
-        {"content": block[:1500], "score": score}
-        for score, block in ranked if score > 0
-    ][:3]}
+    return [{"content": block[:1500], "score": score} for score, block in ranked if score > 0][:top_k]
