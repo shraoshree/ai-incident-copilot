@@ -85,6 +85,8 @@ jobs:
         with:
           path: .cache/embeddings
           key: incident-embeddings-${{ github.sha }}
+      - name: Diagnose raw semantic rankings without cutoff
+        run: python evals/diagnose_semantic.py
       - name: Calibrate cutoff on dev only
         run: |
           python evals/evaluate.py --backend semantic --split dev --tune-threshold > evals/calibration.json
@@ -98,3 +100,4 @@ jobs:
           path: |
             evals/results.json
             evals/calibration.json
+            evals/diagnostics.json
