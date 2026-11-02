@@ -4,3 +4,4 @@ python-dotenv
 google-genai
 pytest
 httpx
+psycopg[binary]>=3.2,<4

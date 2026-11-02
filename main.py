@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from google import genai
 from google.genai import errors
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
+from agent_tools import investigate_with_tools
 
 
 load_dotenv()
@@ -33,7 +34,11 @@ logger = logging.getLogger("incident-copilot")
 
 app = FastAPI()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+def get_gemini_client():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY is not configured")
+    return genai.Client(api_key=api_key)
 
 INCIDENTS_FILE = "data/incidents.json"
 
@@ -144,8 +149,8 @@ Keep the analysis concise and useful for an on-call engineer.
                 incident.service
             )
 
-            response = client.models.generate_content(
-                model="gemini-3.6-flash",
+            response = get_gemini_client().models.generate_content(
+                model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
                 contents=prompt,
                 config={
                     "response_mime_type": "application/json",
@@ -330,6 +335,46 @@ def receive_incident(incident: Incident):
     return {
         "message": "Incident analyzed and saved",
         "incident": saved_incident
+    }
+
+
+
+@app.post("/incident/agent")
+def receive_agent_incident(incident: Incident):
+    """Investigate with bounded read-only tools, then persist validated guidance."""
+    relevant_knowledge = find_relevant_knowledge(incident)
+    tool_trace = []
+    try:
+        result = investigate_with_tools(
+            client=get_gemini_client(),
+            model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+            incident=incident.model_dump(),
+            knowledge_text=load_knowledge(),
+        )
+        tool_trace = result["tool_trace"]
+        raw = result["text"].strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+        analysis = IncidentAnalysis.model_validate_json(raw)
+        source = "gemini_agent"
+    except (ValueError, RuntimeError, ValidationError, errors.APIError) as exc:
+        logger.warning("Agent investigation fallback: %s", type(exc).__name__)
+        analysis = IncidentAnalysis(
+            likely_cause="Root cause not confirmed; agent analysis unavailable.",
+            investigation_steps=[
+                "Review historical incident knowledge.",
+                "Inspect application logs and monitoring metrics.",
+                "Check recent deployments and infrastructure changes.",
+            ],
+            immediate_action="Continue manual investigation; do not perform automated remediation.",
+        )
+        source = "fallback"
+
+    saved = save_incident(incident, relevant_knowledge, analysis, source)
+    return {
+        "message": "Incident investigated and saved",
+        "incident": saved,
+        "tool_trace": tool_trace,
     }
 
 

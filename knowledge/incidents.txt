@@ -24,3 +24,147 @@ Recommended checks:
 2. Check expensive endpoints.
 3. Check application logs.
 4. Check recent deployments.
+
+Incident: Memory Pressure and OOM Kills
+Symptoms: Containers restart after resident memory rises; out-of-memory killer terminates workers.
+Possible cause: Memory leak or undersized container limit.
+Recommended checks:
+1. Inspect RSS and heap profiles
+2. compare container limits
+3. review allocation changes.
+
+Incident: Disk Capacity Exhaustion
+Symptoms: Writes fail with no space left on device; log volume grows unexpectedly.
+Possible cause: Unbounded log retention or disk capacity exhaustion.
+Recommended checks:
+1. Inspect filesystem utilization
+2. identify large logs
+3. review rotation policy.
+
+Incident: DNS Resolution Failure
+Symptoms: Requests fail with NXDOMAIN or temporary name resolution errors.
+Possible cause: Resolver outage or incorrect DNS records.
+Recommended checks:
+1. Query configured resolvers
+2. inspect TTL and records
+3. review resolver health.
+
+Incident: Authentication Token Timeout
+Symptoms: Login requests stall while token validation waits on identity provider.
+Possible cause: Identity provider latency or token verification timeout.
+Recommended checks:
+1. Measure identity provider response times
+2. inspect auth traces
+3. check token cache.
+
+Incident: Deployment Rollback Failure
+Symptoms: Release rollback leaves mixed application versions and incompatible schema.
+Possible cause: Incomplete rollback procedure or migration mismatch.
+Recommended checks:
+1. Check deployment history
+2. inspect schema compatibility
+3. validate rollback plan.
+
+Incident: TLS Certificate Expiration
+Symptoms: Clients reject connections with certificate validation failures.
+Possible cause: Expired TLS certificate or broken certificate chain.
+Recommended checks:
+1. Check certificate expiry
+2. validate chain
+3. verify renewal automation.
+
+Incident: Cache Stampede
+Symptoms: Cache misses surge simultaneously and database read throughput spikes.
+Possible cause: Expired hot key with no request coalescing.
+Recommended checks:
+1. Inspect cache hit rate
+2. inspect hot keys
+3. add request coalescing.
+
+Incident: Queue Consumer Lag
+Symptoms: Messages accumulate in backlog while consumers process slowly.
+Possible cause: Insufficient consumers or downstream processing bottleneck.
+Recommended checks:
+1. Check consumer lag
+2. inspect partition assignment
+3. profile handlers.
+
+Incident: Database Deadlock
+Symptoms: Transactions abort due to cyclic lock waits.
+Possible cause: Conflicting lock order across concurrent transactions.
+Recommended checks:
+1. Inspect deadlock logs
+2. review transaction ordering
+3. reduce lock scope.
+
+Incident: Database Replication Lag
+Symptoms: Replica reads return stale data after primary writes.
+Possible cause: Replication backlog or overloaded replica.
+Recommended checks:
+1. Check replication delay
+2. inspect write volume
+3. verify replica capacity.
+
+Incident: Load Balancer Health Check Failure
+Symptoms: Healthy application pods are removed from traffic rotation.
+Possible cause: Incorrect health probe path or overly strict timeout.
+Recommended checks:
+1. Inspect target health
+2. test probe endpoint
+3. check timeout settings.
+
+Incident: Network Packet Loss
+Symptoms: Intermittent request timeouts coincide with retransmissions.
+Possible cause: Packet drops or network congestion.
+Recommended checks:
+1. Inspect retransmits
+2. check network interfaces
+3. review routing.
+
+Incident: Rate Limit Rejections
+Symptoms: Clients receive HTTP 429 during bursts of traffic.
+Possible cause: Quota exceeded or overly restrictive throttle configuration.
+Recommended checks:
+1. Review per-client quotas
+2. inspect retry headers
+3. tune rate limits.
+
+Incident: Database Migration Lock
+Symptoms: Write operations queue while a schema migration holds a lock.
+Possible cause: Blocking DDL migration on busy table.
+Recommended checks:
+1. Inspect database locks
+2. review migration execution
+3. plan online schema changes.
+
+Incident: Object Storage Permission Denied
+Symptoms: Uploads fail with access denied despite healthy network.
+Possible cause: Incorrect storage policy or service role permissions.
+Recommended checks:
+1. Inspect access policies
+2. verify role
+3. review audit events.
+
+Incident: Thread Pool Exhaustion
+Symptoms: Requests queue while worker threads remain occupied.
+Possible cause: Blocking calls or insufficient worker capacity.
+Recommended checks:
+1. Inspect thread dumps
+2. measure queue depth
+3. isolate blocking operations.
+
+Incident: Clock Skew Authentication Failure
+Symptoms: Signed requests fail validation because timestamps differ between services.
+Possible cause: Unsynchronized system clocks.
+Recommended checks:
+1. Check NTP status
+2. compare host clocks
+3. validate timestamp tolerance.
+
+Incident: Container Image Pull Failure
+Symptoms: New pods cannot start because image fetch fails.
+Possible cause: Registry credentials missing or unavailable image tag.
+Recommended checks:
+1. Inspect image pull events
+2. verify registry auth
+3. confirm image digest.

@@ -39,9 +39,9 @@ def test_knowledge_retrieval():
 def test_no_matching_knowledge():
     incident = main.Incident(
         service="unknown-service",
-        alert="Completely unrelated problem",
+        alert="xyzabc qwertyz",
         severity="low",
-        description="xyzabc unusual event"
+        description="qwertyz xyzabc"
     )
 
     result = main.find_relevant_knowledge(incident)
