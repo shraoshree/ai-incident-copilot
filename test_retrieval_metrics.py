@@ -37,10 +37,13 @@ def test_empty_and_duplicate_cases_are_rejected():
         evaluation.evaluate_cases(repeated, "")
 
 
-def test_real_six_case_fixture_produces_report():
+def test_labeled_36_case_fixture_produces_report():
     cases = json.loads((ROOT / "evals/retrieval_cases.json").read_text())
     knowledge = (ROOT / "knowledge/incidents.txt").read_text()
     report = evaluation.evaluate_cases(cases, knowledge)
-    assert report["cases"] == 6
+    assert report["cases"] == 36
+    assert len({case["id"] for case in cases}) == 36
+    assert all(case["expected_phrase"] in knowledge for case in cases)
+    assert {case["category"] for case in cases} == {"direct", "paraphrase"}
     assert 0 <= report["hit_at_3"] <= 1
     assert 0 <= report["mrr_at_k"] <= 1
