@@ -31,7 +31,7 @@
   },
   {
     "id": "latency-06",
-    "query": "payment requests take too long when SQL pool is full",
+    "query": "checkout stalls because workers wait for scarce SQL sessions",
     "expected_phrase": "Payment Service High Latency",
     "category": "paraphrase"
   },
@@ -43,7 +43,7 @@
   },
   {
     "id": "latency-08",
-    "query": "SQL connection starvation is delaying transactions",
+    "query": "transactions hang while all available SQL slots are occupied",
     "expected_phrase": "Payment Service High Latency",
     "category": "paraphrase"
   },
@@ -55,7 +55,7 @@
   },
   {
     "id": "latency-10",
-    "query": "connection pool saturation causes slow checkout responses",
+    "query": "checkout stalls during session starvation",
     "expected_phrase": "Payment Service High Latency",
     "category": "paraphrase"
   },
@@ -103,7 +103,7 @@
   },
   {
     "id": "errors-06",
-    "query": "upstream requests fail when dependency is unavailable",
+    "query": "partner dependency unavailable so client operations fail",
     "expected_phrase": "High API Error Rate",
     "category": "paraphrase"
   },
@@ -121,7 +121,7 @@
   },
   {
     "id": "errors-09",
-    "query": "gateway is returning failures because backend is down",
+    "query": "gateway replies with failures when the backend is unreachable",
     "expected_phrase": "High API Error Rate",
     "category": "paraphrase"
   },
@@ -139,7 +139,7 @@
   },
   {
     "id": "errors-12",
-    "query": "downstream outage makes endpoint return failures",
+    "query": "third party outage leads to failed requests",
     "expected_phrase": "High API Error Rate",
     "category": "paraphrase"
   },
@@ -175,7 +175,7 @@
   },
   {
     "id": "cpu-06",
-    "query": "compute saturation during a burst of requests",
+    "query": "compute resources pegged after a sudden surge",
     "expected_phrase": "High CPU Usage",
     "category": "paraphrase"
   },
@@ -205,7 +205,7 @@
   },
   {
     "id": "cpu-11",
-    "query": "hot endpoints consuming excessive compute resources",
+    "query": "hot handlers burn processor cycles",
     "expected_phrase": "High CPU Usage",
     "category": "paraphrase"
   },
@@ -214,5 +214,65 @@
     "query": "slow application processing under high request volume",
     "expected_phrase": "High CPU Usage",
     "category": "paraphrase"
+  },
+  {
+    "id": "negative-01",
+    "query": "unrelated cafeteria menu and lunch order",
+    "category": "negative",
+    "expected_phrase": null
+  },
+  {
+    "id": "negative-02",
+    "query": "marketing campaign impressions and advertising conversion",
+    "category": "negative",
+    "expected_phrase": null
+  },
+  {
+    "id": "negative-03",
+    "query": "employee vacation approval calendar",
+    "category": "negative",
+    "expected_phrase": null
+  },
+  {
+    "id": "negative-04",
+    "query": "weather forecast rainfall this weekend",
+    "category": "negative",
+    "expected_phrase": null
+  },
+  {
+    "id": "ambiguous-01",
+    "query": "slow checkout during a cache stampede and database overload",
+    "category": "ambiguous",
+    "expected_phrases": [
+      "Payment Service High Latency",
+      "Cache Stampede"
+    ]
+  },
+  {
+    "id": "ambiguous-02",
+    "query": "login failures from DNS resolver outage and identity provider timeout",
+    "category": "ambiguous",
+    "expected_phrases": [
+      "DNS Resolution Failure",
+      "Authentication Token Timeout"
+    ]
+  },
+  {
+    "id": "ambiguous-03",
+    "query": "server errors after deployment rollback with downstream outage",
+    "category": "ambiguous",
+    "expected_phrases": [
+      "High API Error Rate",
+      "Deployment Rollback Failure"
+    ]
+  },
+  {
+    "id": "ambiguous-04",
+    "query": "requests stall with thread starvation and overloaded processors",
+    "category": "ambiguous",
+    "expected_phrases": [
+      "Thread Pool Exhaustion",
+      "High CPU Usage"
+    ]
   }
 ]
