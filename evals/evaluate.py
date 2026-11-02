@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from agent_tools import search_incident_knowledge
+from vector_store import keyword_search
 
 
 def records(text):
@@ -124,7 +125,9 @@ def main():
         cases = [case for case in cases if case["split"] == args.split]
     reports = {}
     if args.backend in ("keyword", "both"):
-        reports["keyword"] = evaluate_cases(cases, knowledge, k=args.k, backend="keyword")
+        def keyword(query, text):
+            return {"matches": [{"excerpt": item["content"], "score": item["score"]} for item in keyword_search(query, text, top_k=args.k)]}
+        reports["keyword"] = evaluate_cases(cases, knowledge, retriever=keyword, k=args.k, backend="keyword")
     if args.backend in ("semantic", "both"):
         if not os.getenv("DATABASE_URL") or not os.getenv("GEMINI_API_KEY"):
             parser.error("Semantic evaluation requires DATABASE_URL, GEMINI_API_KEY and an indexed corpus")
