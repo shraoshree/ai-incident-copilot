@@ -84,15 +84,20 @@ def search(query, top_k=3, embedder=embed):
 
 def retrieve_or_fallback(query, knowledge_text):
     """No silent database writes; fall back to local keyword search on outage."""
-    from agent_tools import search_incident_knowledge
-    if enabled():
+     if enabled():
         try:
             return {"backend": "pgvector", "matches": search(query)}
         except Exception:
             import logging
             logging.getLogger(__name__).exception("Vector retrieval failed; using local knowledge")
-    result = search_incident_knowledge(query, knowledge_text)
+    terms = {word.strip(".,:;!?()").lower() for word in query.split() if len(word) > 4}
+    blocks = [part.strip() for part in knowledge_text.split("\\n\\n") if part.strip()]
+    ranked = sorted(
+        ((sum(term in block.lower() for term in terms), block) for block in blocks),
+        key=lambda item: item[0],
+        reverse=True,
+    )
     return {"backend": "keyword", "matches": [
-        {"content": item["excerpt"], "score": item["score"]}
-        for item in result["matches"]
-    ]}
+        {"content": block[:1500], "score": score}
+        for score, block in ranked if score > 0
+    ][:3]}
