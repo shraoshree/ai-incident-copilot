@@ -138,7 +138,7 @@ def keyword_search(query, knowledge_text, top_k=3):
     if not 1 <= top_k <= 10:
         raise ValueError("top_k must be between 1 and 10")
     terms = {word.strip(".,:;!?()").lower() for word in query.split() if len(word) > 4}
-    blocks = [part.strip() for part in knowledge_text.split("\\n\\n") if part.strip()]
+    blocks = [part.strip() for part in knowledge_text.split("\n\n") if part.strip()]
     ranked = sorted(
         ((sum(term in block.lower() for term in terms), block) for block in blocks),
         key=lambda item: item[0], reverse=True,
