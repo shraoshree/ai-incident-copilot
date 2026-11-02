@@ -150,7 +150,7 @@ Keep the analysis concise and useful for an on-call engineer.
             )
 
             response = get_gemini_client().models.generate_content(
-                model="gemini-3.6-flash",
+                model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
                 contents=prompt,
                 config={
                     "response_mime_type": "application/json",
@@ -347,7 +347,7 @@ def receive_agent_incident(incident: Incident):
     try:
         result = investigate_with_tools(
             client=get_gemini_client(),
-            model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+            model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
             incident=incident.model_dump(),
             knowledge_text=load_knowledge(),
         )
