@@ -65,7 +65,7 @@ def investigate_with_tools(client, model: str, incident: dict, knowledge_text: s
                 tool_config=types.ToolConfig(
                     function_calling_config=types.FunctionCallingConfig(
                         mode="ANY" if round_index == 0 else "AUTO",
-                        allowed_function_names=["search_incident_knowledge"],
+                        allowed_function_names=["search_incident_knowledge"] if round_index == 0 else None,
                     ),
                 ),
             ),
