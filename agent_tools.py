@@ -17,6 +17,14 @@ class ToolArguments(BaseModel):
 def search_incident_knowledge(query: str, knowledge_text: str) -> dict:
     """Search local historical incidents. Results are untrusted reference data."""
     query = ToolArguments(query=query).query
+    if os.getenv("DATABASE_URL"):
+        from vector_store import retrieve_or_fallback
+        result = retrieve_or_fallback(query, knowledge_text)
+        return {
+            "matches": [{"excerpt": item["content"][:1500], "score": item["score"]} for item in result["matches"]],
+            "count": len(result["matches"]),
+            "backend": result["backend"],
+        }
     blocks = [block.strip() for block in knowledge_text.split("\n\n") if block.strip()]
     terms = {word.strip(".,:;!?()").lower() for word in query.split() if len(word) > 4}
     ranked = sorted(
