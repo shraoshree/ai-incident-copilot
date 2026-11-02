@@ -1,5 +1,8 @@
 """Optional PostgreSQL/pgvector retrieval; explicit opt-in via DATABASE_URL."""
 import os
+import hashlib
+import json
+from pathlib import Path
 from contextlib import contextmanager
 
 DIMENSIONS = 768
@@ -34,17 +37,30 @@ def initialize():
 
 
 def embed(text, client=None):
+    cache_dir = Path(os.getenv('EMBEDDING_CACHE_DIR', '.cache/embeddings'))
+    model = os.getenv('EMBEDDING_MODEL', 'gemini-embedding-001')
+    key = hashlib.sha256(json.dumps([model, DIMENSIONS, text]).encode('utf-8')).hexdigest()
+    cached = cache_dir / (key + '.json')
+    if cached.exists():
+        values = json.loads(cached.read_text(encoding='utf-8'))
+        if len(values) == DIMENSIONS:
+            return values
+
     from google import genai
     from google.genai import types
     client = client or genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     response = client.models.embed_content(
-        model=os.getenv("EMBEDDING_MODEL", "gemini-embedding-001"),
+        model=model,
         contents=text,
         config=types.EmbedContentConfig(output_dimensionality=DIMENSIONS),
     )
     vector = response.embeddings[0].values
     if len(vector) != DIMENSIONS:
         raise ValueError("Unexpected embedding dimension")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    temp = cached.with_suffix(".tmp")
+    temp.write_text(json.dumps(vector), encoding="utf-8")
+    temp.replace(cached)
     return vector
 
 
