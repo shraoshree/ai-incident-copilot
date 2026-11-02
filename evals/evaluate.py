@@ -89,6 +89,7 @@ def main():
     parser.add_argument("--backend", choices=["keyword", "semantic", "both"], default="keyword")
     parser.add_argument("--k", type=int, default=3)
     parser.add_argument("--split", choices=["dev", "test", "all"], default="test")
+    parser.add_argument("--tune-threshold", action="store_true", help="Calibrate semantic cutoff using dev negatives and positives only")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--min-similarity", type=float, default=None,
                         help="Calibrated cosine similarity cutoff; do not tune on held-out test cases")
@@ -99,6 +100,26 @@ def main():
     cases = json.loads((ROOT / "evals/retrieval_cases.json").read_text())
     knowledge = (ROOT / "knowledge/incidents.txt").read_text()
     corpus = records(knowledge)
+    if args.tune_threshold:
+        if args.split != "dev" or args.backend != "semantic":
+            parser.error("Threshold tuning requires --split dev --backend semantic")
+        if not os.getenv("DATABASE_URL") or not os.getenv("GEMINI_API_KEY"):
+            parser.error("Semantic evaluation requires DATABASE_URL and GEMINI_API_KEY")
+        verify_index(corpus)
+        from vector_store import search
+        negatives = [case for case in cases if case["split"] == "dev" and case["category"] == "negative"]
+        positives = [case for case in cases if case["split"] == "dev" and case["category"] != "negative"]
+        if not negatives or not positives:
+            parser.error("Need both dev negative and positive examples")
+        scores = {case["id"]: search(case["query"], top_k=args.k, min_similarity=-1) for case in negatives + positives}
+        candidates = sorted({float(row["score"]) for rows in scores.values() for row in rows} | {1.0})
+        def utility(cutoff):
+            good = sum(any(row["score"] >= cutoff and row["content"].split("\\n", 1)[0][10:] in case.get("expected_phrases", [case.get("expected_phrase")]) for row in scores[case["id"]][:1]) for case in positives)
+            abstain = sum(not any(row["score"] >= cutoff for row in scores[case["id"]]) for case in negatives)
+            return good / len(positives) + abstain / len(negatives)
+        best = max(candidates, key=lambda value: (utility(value), value))
+        print(json.dumps({"dev_cases": len(positives) + len(negatives), "recommended_min_similarity": best, "dev_utility": utility(best)}, indent=2))
+        return
     if args.split != "all":
         cases = [case for case in cases if case["split"] == args.split]
     reports = {}
