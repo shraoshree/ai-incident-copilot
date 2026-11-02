@@ -21,7 +21,7 @@ jobs:
       - name: Run offline tests
         run: python -m pytest -q -m 'not live and not pgvector'
       - name: Evaluate labeled retrieval cases
-        run: python evals/evaluate.py
+        run: python evals/evaluate.py --backend keyword --split test --output evals/results.json
 
   pgvector-integration:
     runs-on: ubuntu-latest
