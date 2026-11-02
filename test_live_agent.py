@@ -1,5 +1,7 @@
 """Opt-in live test: run only with a private GEMINI_API_KEY."""
 import os
+import time
+from google.genai import errors
 
 import pytest
 from google import genai
@@ -23,12 +25,20 @@ def test_real_model_searches_historical_knowledge():
         "severity": "high",
         "description": "Connection pool exhaustion after traffic spike",
     }
-    result = investigate_with_tools(
-        genai.Client(api_key=key),
-        os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-        incident,
-        knowledge,
-    )
+    result = None
+    for attempt in range(3):
+        try:
+            result = investigate_with_tools(
+                genai.Client(api_key=key),
+                os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                incident,
+                knowledge,
+            )
+            break
+        except errors.ServerError:
+            if attempt == 2:
+                raise
+            time.sleep(5 * (attempt + 1))
     assert any(
         event["tool"] == "search_incident_knowledge" and event["result_count"] > 0
         for event in result["tool_trace"]
