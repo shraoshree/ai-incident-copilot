@@ -1,9 +1,10 @@
-"""Offline ranking evaluation; semantic mode requires a configured, indexed database."""
+"""Comparable retrieval benchmark; live semantic evaluation is opt-in."""
 import argparse
 import json
 import os
+import re
 import sys
-from collections import defaultdict
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,59 +12,115 @@ sys.path.insert(0, str(ROOT))
 from agent_tools import search_incident_knowledge
 
 
-def evaluate_cases(cases, knowledge, retriever=search_incident_knowledge, k=3):
+def records(text):
+    blocks = [block.strip() for block in text.split("\n\n") if block.strip()]
+    ids = []
+    for block in blocks:
+        match = re.match(r"Incident: ([^\n]+)", block)
+        if not match:
+            raise ValueError("Every knowledge chunk must begin with an Incident title")
+        ids.append(match.group(1).strip())
+    if len(ids) != len(set(ids)):
+        raise ValueError("Duplicate incident titles")
+    return dict(zip(ids, blocks))
+
+
+def evaluate_cases(cases, knowledge, retriever=search_incident_knowledge, k=3, backend=None):
     if not 1 <= k <= 10 or not cases:
         raise ValueError("Expected nonempty cases and k between 1 and 10")
+    corpus = records(knowledge)
     seen = set()
     rows = []
     for case in cases:
         if case["id"] in seen:
             raise ValueError("Duplicate case ID")
         seen.add(case["id"])
-        labels = case.get("expected_phrases", [case.get("expected_phrase")])
-        if not labels or (case["category"] != "negative" and not all(isinstance(x, str) and x.strip() for x in labels)):
-            raise ValueError("Invalid expected labels")
-        result = retriever(case["query"], knowledge)
-        matches = [m["excerpt"] for m in result["matches"][:k]]
-        ranks = [i for i, item in enumerate(matches, 1) if any(label and label.casefold() in item.casefold() for label in labels)]
-        rank = min(ranks) if ranks else None
         negative = case["category"] == "negative"
+        labels = case.get("expected_phrases", [case.get("expected_phrase")])
+        if negative:
+            if labels not in ([], [None]):
+                raise ValueError("Negative cases must have no expected incident")
+        elif not labels or any(label not in corpus for label in labels):
+            raise ValueError("Expected incident IDs must exist in corpus")
+        result = retriever(case["query"], knowledge)
+        matches = result["matches"][:k]
+        retrieved = []
+        for item in matches:
+            excerpt = item.get("excerpt", item.get("content", ""))
+            match = re.match(r"Incident: ([^\n]+)", excerpt)
+            if not match or match.group(1).strip() not in corpus:
+                raise ValueError("Retriever returned a chunk without a valid incident ID")
+            retrieved.append(match.group(1).strip())
+        rank = next((i for i, name in enumerate(retrieved, 1) if name in labels), None)
         rows.append({"id": case["id"], "category": case["category"], "rank": rank,
-                     "hit_at_1": rank == 1, "hit_at_3": rank is not None and rank <= 3,
-                     "reciprocal_rank": 1 / rank if rank else 0,
-                     "returned_results": len(matches),
-                     "correct_abstention": not matches if negative else None})
-    positive = [r for r in rows if r["category"] != "negative"]
+                     "hit_at_1": rank == 1, "hit_at_k": rank is not None,
+                     "reciprocal_rank": 1 / rank if rank else 0.0,
+                     "returned_results": len(retrieved),
+                     "correct_abstention": len(retrieved) == 0 if negative else None})
+    positive = [row for row in rows if row["category"] != "negative"]
     def metrics(group):
-        return {"count": len(group),
-                "hit_at_1": sum(x["hit_at_1"] for x in group) / len(group) if group else None,
-                "hit_at_3": sum(x["hit_at_3"] for x in group) / len(group) if group else None,
-                "mrr_at_3": sum(x["reciprocal_rank"] for x in group) / len(group) if group else None}
-    by_category = {cat: metrics([r for r in positive if r["category"] == cat]) for cat in sorted({r["category"] for r in positive})}
-    negatives = [r for r in rows if r["category"] == "negative"]
-    return {"cases": len(rows), "retrieval_backend": "keyword" if retriever is search_incident_knowledge else "injected",
-            "hit_at_1": metrics(positive)["hit_at_1"], "hit_at_3": metrics(positive)["hit_at_3"],
-            "hit_at_k": sum(x["rank"] is not None and x["rank"] <= k for x in positive) / len(positive) if positive else None,
-            "mrr_at_k": sum(x["reciprocal_rank"] for x in positive) / len(positive) if positive else None,
-            "mrr_at_3": metrics(positive)["mrr_at_3"],
-            "negative_abstention_rate": sum(r["correct_abstention"] for r in negatives) / len(negatives) if negatives else None,
-            "by_category": by_category, "results": rows}
+        n = len(group)
+        return {"count": n,
+                "hit_at_1": sum(row["hit_at_1"] for row in group) / n if n else None,
+                "hit_at_k": sum(row["hit_at_k"] for row in group) / n if n else None,
+                "mrr_at_k": sum(row["reciprocal_rank"] for row in group) / n if n else None}
+    summary = metrics(positive)
+    negatives = [row for row in rows if row["category"] == "negative"]
+    return {"cases": len(rows), "corpus_records": len(corpus), "k": k,
+            "retrieval_backend": backend or ("keyword" if retriever is search_incident_knowledge else "injected"),
+            **summary,
+            "negative_abstention_rate": sum(row["correct_abstention"] for row in negatives) / len(negatives) if negatives else None,
+            "by_category": {cat: metrics([row for row in positive if row["category"] == cat])
+                            for cat in sorted({row["category"] for row in positive})},
+            "results": rows}
+
+
+def verify_index(corpus):
+    from vector_store import connection
+    with connection() as conn:
+        indexed = {row[0] for row in conn.execute("SELECT content FROM knowledge_chunks").fetchall()}
+    expected = set(corpus.values())
+    if indexed != expected:
+        raise RuntimeError(f"Stale semantic index: {len(indexed)} indexed vs {len(expected)} corpus records; re-run scripts/index_knowledge.py")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--backend", choices=["keyword", "semantic", "both"], default="keyword")
+    parser.add_argument("--k", type=int, default=3)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--min-similarity", type=float, default=None,
+                        help="Calibrated cosine similarity cutoff; do not tune on held-out test cases")
+    parser.add_argument("--delay", type=float, default=0.25, help="Seconds between semantic embedding requests")
+    args = parser.parse_args()
+    if args.delay < 0 or (args.min_similarity is not None and not -1 <= args.min_similarity <= 1):
+        parser.error("Invalid delay or similarity threshold")
+    cases = json.loads((ROOT / "evals/retrieval_cases.json").read_text())
+    knowledge = (ROOT / "knowledge/incidents.txt").read_text()
+    corpus = records(knowledge)
+    reports = {}
+    if args.backend in ("keyword", "both"):
+        reports["keyword"] = evaluate_cases(cases, knowledge, k=args.k, backend="keyword")
+    if args.backend in ("semantic", "both"):
+        if not os.getenv("DATABASE_URL") or not os.getenv("GEMINI_API_KEY"):
+            parser.error("Semantic evaluation requires DATABASE_URL, GEMINI_API_KEY and an indexed corpus")
+        verify_index(corpus)
+        from vector_store import search
+        def semantic(query, _):
+            time.sleep(args.delay)
+            rows = search(query, top_k=args.k)
+            if args.min_similarity is not None:
+                rows = [row for row in rows if row["score"] >= args.min_similarity]
+            return {"matches": [{"excerpt": row["content"]} for row in rows]}
+        reports["semantic"] = evaluate_cases(cases, knowledge, retriever=semantic, k=args.k, backend="semantic")
+        reports["semantic"]["min_similarity"] = args.min_similarity
+        reports["semantic"]["abstention_configured"] = args.min_similarity is not None
+    output = json.dumps(reports, indent=2) + "\n"
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(output)
+    print(output)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--backend", choices=["keyword", "semantic", "both"], default="keyword")
-    args = parser.parse_args()
-    cases = json.loads((ROOT / "evals/retrieval_cases.json").read_text())
-    knowledge = (ROOT / "knowledge/incidents.txt").read_text()
-    reports = {}
-    if args.backend in ("keyword", "both"):
-        reports["keyword"] = evaluate_cases(cases, knowledge)
-    if args.backend in ("semantic", "both"):
-        if not os.getenv("DATABASE_URL") or not os.getenv("GEMINI_API_KEY"):
-            raise SystemExit("Semantic evaluation requires DATABASE_URL, GEMINI_API_KEY and an indexed corpus")
-        from vector_store import search
-        def semantic(query, _):
-            return {"matches": [{"excerpt": row["content"]} for row in search(query, top_k=3)]}
-        reports["semantic"] = evaluate_cases(cases, knowledge, retriever=semantic)
-    print(json.dumps(reports, indent=2))
+    main()
