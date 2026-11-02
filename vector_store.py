@@ -3,6 +3,8 @@ import os
 import hashlib
 import json
 from pathlib import Path
+import time
+import re
 from contextlib import contextmanager
 
 DIMENSIONS = 768
@@ -49,11 +51,22 @@ def embed(text, client=None, task_type="RETRIEVAL_QUERY"):
     from google import genai
     from google.genai import types
     client = client or genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    response = client.models.embed_content(
-        model=model,
-        contents=text,
-        config=types.EmbedContentConfig(output_dimensionality=DIMENSIONS, task_type=task_type),
-    )
+    response = None
+    for attempt in range(5):
+        try:
+            response = client.models.embed_content(
+                model=model,
+                contents=text,
+                config=types.EmbedContentConfig(output_dimensionality=DIMENSIONS, task_type=task_type),
+            )
+            break
+        except Exception as exc:
+            message = str(exc)
+            if ("429" not in message and "RESOURCE_EXHAUSTED" not in message) or attempt == 4:
+                raise
+            retry = re.search(r"retry in ([0-9.]+)s", message, flags=re.I)
+            delay = min(90.0, max(5.0, float(retry.group(1)) + 2 if retry else 15.0 * (attempt + 1)))
+            time.sleep(delay)
     vector = response.embeddings[0].values
     if len(vector) != DIMENSIONS:
         raise ValueError("Unexpected embedding dimension")
