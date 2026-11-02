@@ -54,7 +54,7 @@ def investigate_with_tools(client, model: str, incident: dict, knowledge_text: s
     )
     history = [types.Content(role="user", parts=[types.Part.from_text(text=prompt)])]
     trace = []
-    for _ in range(MAX_TOOL_ROUNDS):
+    for round_index in range(MAX_TOOL_ROUNDS):
         response = client.models.generate_content(
             model=model,
             contents=history,
@@ -62,6 +62,12 @@ def investigate_with_tools(client, model: str, incident: dict, knowledge_text: s
                 tools=[SEARCH_TOOL],
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
                 temperature=0,
+                tool_config=types.ToolConfig(
+                    function_calling_config=types.FunctionCallingConfig(
+                        mode="ANY" if round_index == 0 else "AUTO",
+                        allowed_function_names=["search_incident_knowledge"],
+                    ),
+                ),
             ),
         )
         calls = response.function_calls or []
