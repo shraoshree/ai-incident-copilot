@@ -1,32 +1,218 @@
 [
   {
-    "id": "db-connections",
+    "id": "latency-01",
     "query": "payment service high latency database connection pool exhaustion",
-    "expected_phrase": "Payment Service High Latency"
+    "expected_phrase": "Payment Service High Latency",
+    "category": "direct"
   },
   {
-    "id": "api-errors",
-    "query": "HTTP 5xx error rate downstream service failure",
-    "expected_phrase": "High API Error Rate"
+    "id": "latency-02",
+    "query": "payment API p99 latency above 2000ms",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "direct"
   },
   {
-    "id": "cpu-saturation",
-    "query": "application CPU usage traffic spike expensive processing",
-    "expected_phrase": "High CPU Usage"
+    "id": "latency-03",
+    "query": "database connections exhausted during payment requests",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "direct"
   },
   {
-    "id": "db-synonym-hard",
-    "query": "connection starvation exhausted SQL connections",
-    "expected_phrase": "Payment Service High Latency"
+    "id": "latency-04",
+    "query": "payment service slow database queries and active connections",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "direct"
   },
   {
-    "id": "downstream-synonym-hard",
-    "query": "dependency outage causes server errors",
-    "expected_phrase": "High API Error Rate"
+    "id": "latency-05",
+    "query": "slow payment endpoint after recent deployments",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "direct"
   },
   {
-    "id": "cpu-synonym-hard",
-    "query": "compute saturation from inefficient handlers",
-    "expected_phrase": "High CPU Usage"
+    "id": "latency-06",
+    "query": "payment requests take too long when SQL pool is full",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "paraphrase"
+  },
+  {
+    "id": "latency-07",
+    "query": "checkout service waiting for free database connections",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "paraphrase"
+  },
+  {
+    "id": "latency-08",
+    "query": "SQL connection starvation is delaying transactions",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "paraphrase"
+  },
+  {
+    "id": "latency-09",
+    "query": "p99 response times spiked on payment processing",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "paraphrase"
+  },
+  {
+    "id": "latency-10",
+    "query": "connection pool saturation causes slow checkout responses",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "paraphrase"
+  },
+  {
+    "id": "latency-11",
+    "query": "payment service sluggish while database sessions are maxed out",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "paraphrase"
+  },
+  {
+    "id": "latency-12",
+    "query": "transactions time out because no database sessions are available",
+    "expected_phrase": "Payment Service High Latency",
+    "category": "paraphrase"
+  },
+  {
+    "id": "errors-01",
+    "query": "HTTP 5xx error rate above 5 percent downstream service failure",
+    "expected_phrase": "High API Error Rate",
+    "category": "direct"
+  },
+  {
+    "id": "errors-02",
+    "query": "high API error rate with failing downstream service",
+    "expected_phrase": "High API Error Rate",
+    "category": "direct"
+  },
+  {
+    "id": "errors-03",
+    "query": "HTTP 500 responses check downstream service health",
+    "expected_phrase": "High API Error Rate",
+    "category": "direct"
+  },
+  {
+    "id": "errors-04",
+    "query": "application logs show 5xx after network connectivity issue",
+    "expected_phrase": "High API Error Rate",
+    "category": "direct"
+  },
+  {
+    "id": "errors-05",
+    "query": "API errors increased after recent deployments",
+    "expected_phrase": "High API Error Rate",
+    "category": "direct"
+  },
+  {
+    "id": "errors-06",
+    "query": "upstream requests fail when dependency is unavailable",
+    "expected_phrase": "High API Error Rate",
+    "category": "paraphrase"
+  },
+  {
+    "id": "errors-07",
+    "query": "server errors from a broken dependent service",
+    "expected_phrase": "High API Error Rate",
+    "category": "paraphrase"
+  },
+  {
+    "id": "errors-08",
+    "query": "client requests receive internal server error responses",
+    "expected_phrase": "High API Error Rate",
+    "category": "paraphrase"
+  },
+  {
+    "id": "errors-09",
+    "query": "gateway is returning failures because backend is down",
+    "expected_phrase": "High API Error Rate",
+    "category": "paraphrase"
+  },
+  {
+    "id": "errors-10",
+    "query": "dependency outage causes elevated request failure percentage",
+    "expected_phrase": "High API Error Rate",
+    "category": "paraphrase"
+  },
+  {
+    "id": "errors-11",
+    "query": "service-to-service connectivity issue leads to error responses",
+    "expected_phrase": "High API Error Rate",
+    "category": "paraphrase"
+  },
+  {
+    "id": "errors-12",
+    "query": "downstream outage makes endpoint return failures",
+    "expected_phrase": "High API Error Rate",
+    "category": "paraphrase"
+  },
+  {
+    "id": "cpu-01",
+    "query": "application CPU usage above 90 percent traffic spike",
+    "expected_phrase": "High CPU Usage",
+    "category": "direct"
+  },
+  {
+    "id": "cpu-02",
+    "query": "high CPU usage expensive application processing",
+    "expected_phrase": "High CPU Usage",
+    "category": "direct"
+  },
+  {
+    "id": "cpu-03",
+    "query": "CPU saturated after request traffic increased",
+    "expected_phrase": "High CPU Usage",
+    "category": "direct"
+  },
+  {
+    "id": "cpu-04",
+    "query": "application CPU over 90 check expensive endpoints",
+    "expected_phrase": "High CPU Usage",
+    "category": "direct"
+  },
+  {
+    "id": "cpu-05",
+    "query": "CPU usage elevated review application logs",
+    "expected_phrase": "High CPU Usage",
+    "category": "direct"
+  },
+  {
+    "id": "cpu-06",
+    "query": "compute saturation during a burst of requests",
+    "expected_phrase": "High CPU Usage",
+    "category": "paraphrase"
+  },
+  {
+    "id": "cpu-07",
+    "query": "processor utilization maxed out from inefficient handlers",
+    "expected_phrase": "High CPU Usage",
+    "category": "paraphrase"
+  },
+  {
+    "id": "cpu-08",
+    "query": "traffic surge overwhelms application compute capacity",
+    "expected_phrase": "High CPU Usage",
+    "category": "paraphrase"
+  },
+  {
+    "id": "cpu-09",
+    "query": "service burns processor cycles on costly request processing",
+    "expected_phrase": "High CPU Usage",
+    "category": "paraphrase"
+  },
+  {
+    "id": "cpu-10",
+    "query": "CPU pegged near capacity during peak load",
+    "expected_phrase": "High CPU Usage",
+    "category": "paraphrase"
+  },
+  {
+    "id": "cpu-11",
+    "query": "hot endpoints consuming excessive compute resources",
+    "expected_phrase": "High CPU Usage",
+    "category": "paraphrase"
+  },
+  {
+    "id": "cpu-12",
+    "query": "slow application processing under high request volume",
+    "expected_phrase": "High CPU Usage",
+    "category": "paraphrase"
   }
 ]
