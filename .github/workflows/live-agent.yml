@@ -5,6 +5,8 @@ on:
     branches: [feature/agentic-incident-investigation]
     paths:
       - '.github/workflows/live-agent.yml'
+      - 'test_live_agent.py'
+      - 'agent_tools.py'
   workflow_dispatch:
 
 permissions:
