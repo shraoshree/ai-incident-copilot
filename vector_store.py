@@ -36,10 +36,10 @@ def initialize():
         """)
 
 
-def embed(text, client=None):
+def embed(text, client=None, task_type="RETRIEVAL_QUERY"):
     cache_dir = Path(os.getenv('EMBEDDING_CACHE_DIR', '.cache/embeddings'))
     model = os.getenv('EMBEDDING_MODEL', 'gemini-embedding-001')
-    key = hashlib.sha256(json.dumps([model, DIMENSIONS, text]).encode('utf-8')).hexdigest()
+    key = hashlib.sha256(json.dumps([model, DIMENSIONS, task_type, text]).encode('utf-8')).hexdigest()
     cached = cache_dir / (key + '.json')
     if cached.exists():
         values = json.loads(cached.read_text(encoding='utf-8'))
@@ -52,7 +52,7 @@ def embed(text, client=None):
     response = client.models.embed_content(
         model=model,
         contents=text,
-        config=types.EmbedContentConfig(output_dimensionality=DIMENSIONS),
+        config=types.EmbedContentConfig(output_dimensionality=DIMENSIONS, task_type=task_type),
     )
     vector = response.embeddings[0].values
     if len(vector) != DIMENSIONS:
@@ -75,7 +75,7 @@ def upsert_chunks(chunks, embedder=embed):
         for chunk in chunks:
             if not chunk.strip():
                 continue
-            vector = vector_literal(embedder(chunk))
+            vector = vector_literal(embedder(chunk, task_type="RETRIEVAL_DOCUMENT") if embedder is embed else embedder(chunk))
             conn.execute(
                 """INSERT INTO knowledge_chunks (content, embedding)
                    VALUES (%s, %s::vector)
@@ -84,7 +84,17 @@ def upsert_chunks(chunks, embedder=embed):
             )
 
 
-def search(query, top_k=3, embedder=embed):
+def similarity_threshold():
+    value = os.getenv("MIN_SIMILARITY")
+    if value is None or not value.strip():
+        return None
+    threshold = float(value)
+    if not -1 <= threshold <= 1:
+        raise ValueError("MIN_SIMILARITY must be between -1 and 1")
+    return threshold
+
+
+def search(query, top_k=3, embedder=embed, min_similarity=None):
     if not 1 <= top_k <= 10:
         raise ValueError("top_k must be between 1 and 10")
     vector = vector_literal(embedder(query))
@@ -95,7 +105,9 @@ def search(query, top_k=3, embedder=embed):
                ORDER BY embedding <=> %s::vector LIMIT %s""",
             (vector, vector, top_k),
         ).fetchall()
-    return [{"content": content, "score": float(score)} for content, score in rows]
+    threshold = similarity_threshold() if min_similarity is None else min_similarity
+    return [{"content": content, "score": float(score)} for content, score in rows
+            if threshold is None or float(score) >= threshold]
 
 
 def retrieve_or_fallback(query, knowledge_text):
