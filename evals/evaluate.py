@@ -114,7 +114,7 @@ def main():
         scores = {case["id"]: search(case["query"], top_k=args.k, min_similarity=-1) for case in negatives + positives}
         candidates = sorted({float(row["score"]) for rows in scores.values() for row in rows} | {1.0})
         def utility(cutoff):
-            good = sum(any(row["score"] >= cutoff and row["content"].split("\\n", 1)[0][10:] in case.get("expected_phrases", [case.get("expected_phrase")]) for row in scores[case["id"]][:1]) for case in positives)
+            good = sum(any(row["score"] >= cutoff and row["content"].split("\n", 1)[0][10:] in case.get("expected_phrases", [case.get("expected_phrase")]) for row in scores[case["id"]][:1]) for case in positives)
             abstain = sum(not any(row["score"] >= cutoff for row in scores[case["id"]]) for case in negatives)
             return good / len(positives) + abstain / len(negatives)
         best = max(candidates, key=lambda value: (utility(value), value))
