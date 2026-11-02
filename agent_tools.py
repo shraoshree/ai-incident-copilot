@@ -90,5 +90,5 @@ def investigate_with_tools(client, model: str, incident: dict, knowledge_text: s
                     result = {"error": str(exc)}
             trace.append({"tool": call.name, "result_count": result.get("count", 0)})
             parts.append(types.Part.from_function_response(name=call.name, response=result))
-        history.append(types.Content(role="tool", parts=parts))
+        history.append(types.Content(role="user", parts=parts))
     raise RuntimeError("Agent exceeded tool-round limit")
