@@ -1,6 +1,10 @@
 name: Live Gemini agent verification
 
 on:
+  push:
+    branches: [feature/agentic-incident-investigation]
+    paths:
+      - '.github/workflows/live-agent.yml'
   workflow_dispatch:
 
 permissions:
