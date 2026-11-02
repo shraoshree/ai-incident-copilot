@@ -3,241 +3,281 @@
     "id": "latency-01",
     "query": "payment service high latency database connection pool exhaustion",
     "expected_phrase": "Payment Service High Latency",
-    "category": "direct"
+    "category": "direct",
+    "split": "dev"
   },
   {
     "id": "latency-02",
     "query": "payment API p99 latency above 2000ms",
     "expected_phrase": "Payment Service High Latency",
-    "category": "direct"
+    "category": "direct",
+    "split": "test"
   },
   {
     "id": "latency-03",
     "query": "database connections exhausted during payment requests",
     "expected_phrase": "Payment Service High Latency",
-    "category": "direct"
+    "category": "direct",
+    "split": "test"
   },
   {
     "id": "latency-04",
     "query": "payment service slow database queries and active connections",
     "expected_phrase": "Payment Service High Latency",
-    "category": "direct"
+    "category": "direct",
+    "split": "test"
   },
   {
     "id": "latency-05",
     "query": "slow payment endpoint after recent deployments",
     "expected_phrase": "Payment Service High Latency",
-    "category": "direct"
+    "category": "direct",
+    "split": "dev"
   },
   {
     "id": "latency-06",
     "query": "checkout stalls because workers wait for scarce SQL sessions",
     "expected_phrase": "Payment Service High Latency",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "latency-07",
     "query": "checkout service waiting for free database connections",
     "expected_phrase": "Payment Service High Latency",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "latency-08",
     "query": "transactions hang while all available SQL slots are occupied",
     "expected_phrase": "Payment Service High Latency",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "latency-09",
     "query": "p99 response times spiked on payment processing",
     "expected_phrase": "Payment Service High Latency",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "dev"
   },
   {
     "id": "latency-10",
     "query": "checkout stalls during session starvation",
     "expected_phrase": "Payment Service High Latency",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "latency-11",
     "query": "payment service sluggish while database sessions are maxed out",
     "expected_phrase": "Payment Service High Latency",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "latency-12",
     "query": "transactions time out because no database sessions are available",
     "expected_phrase": "Payment Service High Latency",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "errors-01",
     "query": "HTTP 5xx error rate above 5 percent downstream service failure",
     "expected_phrase": "High API Error Rate",
-    "category": "direct"
+    "category": "direct",
+    "split": "dev"
   },
   {
     "id": "errors-02",
     "query": "high API error rate with failing downstream service",
     "expected_phrase": "High API Error Rate",
-    "category": "direct"
+    "category": "direct",
+    "split": "test"
   },
   {
     "id": "errors-03",
     "query": "HTTP 500 responses check downstream service health",
     "expected_phrase": "High API Error Rate",
-    "category": "direct"
+    "category": "direct",
+    "split": "test"
   },
   {
     "id": "errors-04",
     "query": "application logs show 5xx after network connectivity issue",
     "expected_phrase": "High API Error Rate",
-    "category": "direct"
+    "category": "direct",
+    "split": "test"
   },
   {
     "id": "errors-05",
     "query": "API errors increased after recent deployments",
     "expected_phrase": "High API Error Rate",
-    "category": "direct"
+    "category": "direct",
+    "split": "dev"
   },
   {
     "id": "errors-06",
     "query": "partner dependency unavailable so client operations fail",
     "expected_phrase": "High API Error Rate",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "errors-07",
     "query": "server errors from a broken dependent service",
     "expected_phrase": "High API Error Rate",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "errors-08",
     "query": "client requests receive internal server error responses",
     "expected_phrase": "High API Error Rate",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "errors-09",
     "query": "gateway replies with failures when the backend is unreachable",
     "expected_phrase": "High API Error Rate",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "dev"
   },
   {
     "id": "errors-10",
     "query": "dependency outage causes elevated request failure percentage",
     "expected_phrase": "High API Error Rate",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "errors-11",
     "query": "service-to-service connectivity issue leads to error responses",
     "expected_phrase": "High API Error Rate",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "errors-12",
     "query": "third party outage leads to failed requests",
     "expected_phrase": "High API Error Rate",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "cpu-01",
     "query": "application CPU usage above 90 percent traffic spike",
     "expected_phrase": "High CPU Usage",
-    "category": "direct"
+    "category": "direct",
+    "split": "dev"
   },
   {
     "id": "cpu-02",
     "query": "high CPU usage expensive application processing",
     "expected_phrase": "High CPU Usage",
-    "category": "direct"
+    "category": "direct",
+    "split": "test"
   },
   {
     "id": "cpu-03",
     "query": "CPU saturated after request traffic increased",
     "expected_phrase": "High CPU Usage",
-    "category": "direct"
+    "category": "direct",
+    "split": "test"
   },
   {
     "id": "cpu-04",
     "query": "application CPU over 90 check expensive endpoints",
     "expected_phrase": "High CPU Usage",
-    "category": "direct"
+    "category": "direct",
+    "split": "test"
   },
   {
     "id": "cpu-05",
     "query": "CPU usage elevated review application logs",
     "expected_phrase": "High CPU Usage",
-    "category": "direct"
+    "category": "direct",
+    "split": "dev"
   },
   {
     "id": "cpu-06",
     "query": "compute resources pegged after a sudden surge",
     "expected_phrase": "High CPU Usage",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "cpu-07",
     "query": "processor utilization maxed out from inefficient handlers",
     "expected_phrase": "High CPU Usage",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "cpu-08",
     "query": "traffic surge overwhelms application compute capacity",
     "expected_phrase": "High CPU Usage",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "cpu-09",
     "query": "service burns processor cycles on costly request processing",
     "expected_phrase": "High CPU Usage",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "dev"
   },
   {
     "id": "cpu-10",
     "query": "CPU pegged near capacity during peak load",
     "expected_phrase": "High CPU Usage",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "cpu-11",
     "query": "hot handlers burn processor cycles",
     "expected_phrase": "High CPU Usage",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "cpu-12",
     "query": "slow application processing under high request volume",
     "expected_phrase": "High CPU Usage",
-    "category": "paraphrase"
+    "category": "paraphrase",
+    "split": "test"
   },
   {
     "id": "negative-01",
     "query": "unrelated cafeteria menu and lunch order",
     "category": "negative",
-    "expected_phrase": null
+    "expected_phrase": null,
+    "split": "dev"
   },
   {
     "id": "negative-02",
     "query": "marketing campaign impressions and advertising conversion",
     "category": "negative",
-    "expected_phrase": null
+    "expected_phrase": null,
+    "split": "test"
   },
   {
     "id": "negative-03",
     "query": "employee vacation approval calendar",
     "category": "negative",
-    "expected_phrase": null
+    "expected_phrase": null,
+    "split": "test"
   },
   {
     "id": "negative-04",
     "query": "weather forecast rainfall this weekend",
     "category": "negative",
-    "expected_phrase": null
+    "expected_phrase": null,
+    "split": "test"
   },
   {
     "id": "ambiguous-01",
@@ -246,7 +286,8 @@
     "expected_phrases": [
       "Payment Service High Latency",
       "Cache Stampede"
-    ]
+    ],
+    "split": "dev"
   },
   {
     "id": "ambiguous-02",
@@ -255,7 +296,8 @@
     "expected_phrases": [
       "DNS Resolution Failure",
       "Authentication Token Timeout"
-    ]
+    ],
+    "split": "test"
   },
   {
     "id": "ambiguous-03",
@@ -264,7 +306,8 @@
     "expected_phrases": [
       "High API Error Rate",
       "Deployment Rollback Failure"
-    ]
+    ],
+    "split": "test"
   },
   {
     "id": "ambiguous-04",
@@ -273,6 +316,7 @@
     "expected_phrases": [
       "Thread Pool Exhaustion",
       "High CPU Usage"
-    ]
+    ],
+    "split": "test"
   }
 ]
