@@ -1,6 +1,8 @@
 """Inspect raw semantic ranks and cosine scores without any similarity cutoff."""
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evals.evaluate import records, verify_index
 from vector_store import search
 
