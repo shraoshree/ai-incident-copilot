@@ -30,8 +30,8 @@ def test_evaluation_reports_hit_rate():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     report = module.evaluate_cases(
-        [{"id": "case1", "query": "database connections exhausted", "expected_phrase": "API latency"}],
+        [{"id": "case1", "query": "database connections exhausted", "expected_phrase": "API latency", "category": "direct"}],
         "Incident: API latency\nSymptoms: database connections exhausted",
     )
     assert report["cases"] == 1
-    assert report["hit_at_3"] == 1.0
+    assert report["hit_at_k"] == 1.0
