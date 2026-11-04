@@ -64,8 +64,8 @@ class ApiSecurityMiddleware(BaseHTTPMiddleware):
         if path in ("/", "/health", "/docs", "/openapi.json", "/redoc", "/docs/oauth2-redirect"):
             return await call_next(request)
         configured = os.getenv("COPILOT_API_KEY", "")
-        if not configured:
-            return JSONResponse(status_code=503, content={"detail": "API authentication is not configured"})
+        if not configured or len(configured) < 24 or configured.startswith("replace_"):
+            return JSONResponse(status_code=503, content={"detail": "A strong API authentication key is required"})
         supplied = request.headers.get("X-API-Key", "")
         if not hmac.compare_digest(supplied, configured):
             return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"},
