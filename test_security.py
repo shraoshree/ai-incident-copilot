@@ -28,6 +28,7 @@ def test_redaction_of_common_secrets_and_identifiers():
     for sensitive in ("hunter2", "ABC123", "abc.DEF", "user@example.com", "192.168.0.10"):
         assert sensitive not in clean
     assert "[REDACTED]" in clean
+    assert "json-secret-123" not in redact_sensitive('{"password": "json-secret-123"}')
 
 
 def test_input_redacted_before_retrieval_and_persistence():
