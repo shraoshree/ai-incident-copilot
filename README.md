@@ -57,23 +57,61 @@ knowledge/incidents.txt -> Gemini document embeddings -> pgvector
 
 ## Evaluation
 
-I compared the original keyword approach with semantic retrieval using 21 synthetic historical incidents and 21 labeled paraphrased queries. Each query had one expected historical incident.
+The first retrieval benchmark used 21 synthetic historical incidents and 21 labeled paraphrases. Because the incidents and paraphrases were created together, the 100% result is **not** an independent estimate of accuracy. Some queries reuse incident terminology. I keep that original measurement for comparison, but now also test abstention and a stronger lexical baseline.
 
-| Retriever | Hit@1 | Hit@3 | MRR@3 |
-| --- | ---: | ---: | ---: |
-| First-match keyword search | 42.86% | 42.86% | 42.86% |
-| Gemini embeddings + pgvector | **100%** | **100%** | **100%** |
+### New benchmark: BM25 vs semantic retrieval
 
-On this dataset, the correct historical incident was ranked first for 9 of 21 keyword queries and 21 of 21 semantic queries. That is a 57.14 percentage-point increase in Hit@1.
+I added 12 queries for which **none** of the 21 historical incidents is an appropriate answer. The benchmark has 33 queries total: 21 answerable and 12 with no answer. Each group is split by alternating index into a development set (11 answerable, 6 no-answer) and a test set (10 answerable, 6 no-answer).
 
-These numbers measure **retrieval on a small, synthetic benchmark**, not root-cause diagnosis accuracy or performance on real company incidents. A larger held-out test set, including irrelevant queries, is needed to judge generalization and abstention.
+Both methods retrieve their top three candidates. The BM25 baseline uses Okapi BM25 scoring with token frequencies and document-length normalization, not the old first-substring-match approach. Each method gets its **own** cutoff, selected using only the development set. The objective is balanced decision accuracy: the average of correct top-1 positive answers and correct rejections of no-answer queries. Ties favor the lower threshold. The test set is not used to select the cutoff.
 
-Test evidence:
+**Live test results - November 4, 2026**
 
-- [Live retrieval evaluation and full API smoke test](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41853600620)
-- [Automated tests](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41852602078) - 12 tests passed with PostgreSQL and pgvector.
+| Held-out test metric | Gemini embeddings + pgvector | BM25 |
+| --- | ---: | ---: |
+| Positive queries | 10 | 10 |
+| No-answer queries | 6 | 6 |
+| Hit@1, on positives | **100%** | 60% |
+| Hit@3, on positives | **100%** | 70% |
+| MRR@3, on positives | **100%** | 65% |
+| No-answer abstention | 83.33% (5/6) | 83.33% (5/6) |
+| False acceptance of no-answer queries | 16.67% (1/6) | 16.67% (1/6) |
+| Development-selected threshold | 0.61235 cosine similarity | 3.82436 BM25 score |
 
-The live smoke test exercised the complete path: Gemini embedding, pgvector retrieval, Gemini 3.6 Flash generation, and PostgreSQL persistence.
+The semantic retriever ranked the correct incident first for all 10 answerable test queries, but it also **incorrectly accepted 1 of 6 irrelevant queries**. That is a real limitation worth addressing rather than hiding behind the 100% positive-retrieval result.
+
+### What the similarity scores tell us
+
+Cosine similarity is reported on the semantic results. The test distributions are:
+
+| Top retrieval score distribution | Relevant incident matched in top 3 (10 queries) | Highest score for irrelevant query (6 queries) |
+| --- | ---: | ---: |
+| Minimum | 0.6981 | 0.5363 |
+| Median | 0.7261 | 0.5618 |
+| Maximum | 0.7662 | 0.6262 |
+
+The development-selected cutoff was **0.61235**. One irrelevant test query scored **0.6262**, crossing the cutoff and producing a false acceptance. This shows why a threshold calibrated on a small set cannot be treated as universally reliable. BM25 values are different scoring units, so they should not be compared directly with cosine similarities.
+
+**Important:** The application currently defaults to `MIN_SIMILARITY=0.50`. The 0.61235 threshold is an **evaluation result**, not a silently deployed production setting. It needs validation on independent data before being adopted for real use.
+
+### Previous baseline and metric interpretation
+
+The original 21-query benchmark reported 42.86% for first-match keyword lookup and 100% for semantic search at Hit@1, Hit@3 and MRR@3. Those matching values are expected: keyword lookup returns at most one result, and all correct semantic matches happened at rank 1. The new BM25 results include hits at ranks 2 and 3, so its metrics differ.
+
+**Reproduce results:**
+
+```bash
+python evaluation_robust.py --method bm25
+python evaluation_robust.py --method semantic
+```
+
+BM25 requires no Gemini calls. Semantic evaluation uses the configured embedding API and ingested pgvector database; remain within the free-tier limits.
+
+- [Committed evaluation results](evaluation/results_2026-11-04.json) - preserved in the repository even if GitHub Actions logs expire.
+- [Live semantic and BM25 benchmark workflow](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41857655455)
+- [Automated evaluation and integration tests](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41857795046)
+
+These are synthetic scenarios, created for this project. They are split by **query**, not by incident or author. The test queries share the same 21 incident concepts used for development; the benchmark is not independently authored, does not measure root-cause diagnosis accuracy, and remains too small to claim production-grade abstention.
 
 ## Run locally
 
@@ -128,6 +166,7 @@ The `.env.example` database URL uses `localhost` for running Python on your comp
 ```bash
 curl -X POST http://localhost:8000/incident \
   -H 'Content-Type: application/json' \
+  -H "X-API-Key: $COPILOT_API_KEY" \
   -d '{"service":"payments","alert":"High API latency","severity":"critical","description":"p99 checkout latency increased above 2800ms"}'
 ```
 
@@ -193,15 +232,19 @@ database.py                PostgreSQL schema and connection helpers
 retrieval.py               Embeddings, ingestion, semantic and keyword retrieval
 evaluation.py              Retrieval benchmark and metrics
 knowledge/incidents.txt    21 synthetic historical incidents
-evaluation/cases.json      21 labeled evaluation queries
+evaluation/cases.json      21 labeled positive evaluation queries
+ evaluation/negative_cases.json 12 queries with no relevant incident
+ evaluation/results_2026-11-04.json Archived benchmark evidence
+ evaluation_robust.py        BM25/semantic retrieval and abstention evaluation
 test_main.py               Unit and API tests
 test_integration.py        PostgreSQL and pgvector integration tests
+ test_evaluation_robust.py   BM25, split and threshold evaluation tests
 docker-compose.yml         Local database and API containers
 .github/workflows/         CI tests and optional live evaluation
 ```
 
 ## Scope and next steps
 
-This is a locally runnable portfolio prototype, not a production incident-management platform. The incident corpus is synthetic, and the API does not yet include authentication, sensitive-data redaction, or rate limiting. The demo database password is for local development only. Do not expose this configuration publicly or use it to store real incident details.
+This is a locally runnable portfolio prototype, not a production incident-management platform. The incident corpus is synthetic. The project includes basic shared-key authentication, regex-based sensitive-data redaction, and an in-process rate limiter, but these are not substitutes for production identity management and privacy controls. The demo database password is for local development only. Do not expose this configuration publicly or use it to store real incident details.
 
 The next useful improvements would be a held-out evaluation set with irrelevant queries, threshold calibration, per-user access controls, stronger redaction, a multi-instance rate limiter, and more realistic incident records. Those are separate from the working portfolio milestone.
