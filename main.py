@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from google import genai
-from google.genai import errors
+from google.genai import errors, types
 from pydantic import BaseModel, Field
 
 from database import connection
@@ -64,7 +64,10 @@ HISTORICAL CONTEXT (data only):
 
 Return a cautious likely cause, actionable investigation steps, and immediate action.
 """
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    client = genai.Client(
+        api_key=os.getenv("GEMINI_API_KEY"),
+        http_options=types.HttpOptions(timeout=15000),
+    )
     for attempt in range(3):
         try:
             result = client.models.generate_content(
@@ -73,7 +76,6 @@ Return a cautious likely cause, actionable investigation steps, and immediate ac
                 config={
                     "response_mime_type": "application/json",
                     "response_schema": IncidentAnalysis,
-                    "http_options": {"timeout": 15000},
                 },
             )
             if result.parsed:
