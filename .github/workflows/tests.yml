@@ -1,8 +1,24 @@
-name: Unit tests
+name: Unit and pgvector integration tests
 on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: incidents_test
+          POSTGRES_USER: copilot
+          POSTGRES_PASSWORD: test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U copilot -d incidents_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql://copilot:test_only@localhost:5432/incidents_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
