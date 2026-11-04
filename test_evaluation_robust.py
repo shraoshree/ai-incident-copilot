@@ -36,8 +36,8 @@ def test_calibration_uses_dev_rows_only():
     assert 0.2 < threshold <= 0.8
     assert metrics["balanced_decision_accuracy"] == 1.0
     assert report_metrics(dev, threshold)["negative_abstention_rate"] == 1.0
-    test = [{"split": "test", "expected_title": "a", "hits": [], "top1_score": 0.0, "correct_score": None},
-            {"split": "test", "expected_title": None, "hits": [], "top1_score": 0.0, "correct_score": None}]
+    test = [{"query": "test positive", "split": "test", "expected_title": "a", "hits": [], "top1_score": 0.0, "correct_score": None},
+            {"query": "test negative", "split": "test", "expected_title": None, "hits": [], "top1_score": 0.0, "correct_score": None}]
     assert summarize(dev + test, "bm25")["threshold"] == pytest.approx(threshold)
 
 
