@@ -1,4 +1,5 @@
 name: Live Gemini semantic retrieval evaluation
+# Validate development-only midpoint threshold with corrected Python code
 on:
   workflow_dispatch:
   push:
