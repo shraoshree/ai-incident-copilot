@@ -7,6 +7,7 @@ from pathlib import Path
 
 from google import genai
 from google.genai import types
+import numpy as np
 from pgvector.psycopg import register_vector
 
 from database import connection
@@ -59,7 +60,7 @@ def ingest(path: str = "knowledge/incidents.txt") -> int:
                    ON CONFLICT (id) DO UPDATE SET
                      title=EXCLUDED.title, content=EXCLUDED.content,
                      embedding=EXCLUDED.embedding, updated_at=now()""",
-                (record["id"], record["title"], record["content"], vector),
+                (record["id"], record["title"], record["content"], np.asarray(vector, dtype=np.float32)),
             )
     return len(records)
 
@@ -79,7 +80,7 @@ def semantic_search(query: str, top_k: int = 3, threshold: float | None = None) 
                FROM knowledge
                ORDER BY embedding <=> %s
                LIMIT %s""",
-            (vector, vector, top_k),
+            (np.asarray(vector, dtype=np.float32), np.asarray(vector, dtype=np.float32), top_k),
         ).fetchall()
     return [
         {"id": r["id"], "title": r["title"], "content": r["content"],
