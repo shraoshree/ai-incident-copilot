@@ -17,7 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 _SENSITIVE_FIELD = re.compile(
     r"(?i)\b(api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|passwd|secret|authorization|client[_-]?secret|private[_-]?key)\s*[:=]\s*([^\s,;]+)"
 )
-_JSON_SECRET = re.compile(r'(?i)"(api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|passwd|secret|authorization|client[_-]?secret|private[_-]?key)"\\s*:\\s*"[^"]*"')
+_JSON_SECRET = re.compile(r'(?i)"(api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|passwd|secret|authorization|client[_-]?secret|private[_-]?key)"\s*:\s*"[^"]*"')
 _BEARER = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/-]+")
 _EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b")
 _IPV4 = re.compile(r"(?<!\d)(?:\d{1,3}\.){3}\d{1,3}(?!\d)")
