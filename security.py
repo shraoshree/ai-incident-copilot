@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 _SENSITIVE_FIELD = re.compile(
-    r"(?i)\b(api[_-]?key|access[_-]?token|refresh[_-]?token|password|passwd|secret|authorization)\s*[:=]\s*([^\s,;]+)"
+    r"(?i)\b(api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|passwd|secret|authorization|client[_-]?secret|private[_-]?key)\s*[:=]\s*([^\s,;]+)"
 )
 _BEARER = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/-]+")
 _EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b")
@@ -59,7 +59,7 @@ limiter = FixedWindowLimiter()
 class ApiSecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        if path in ("/", "/health"):
+        if path in ("/", "/health", "/docs", "/openapi.json", "/redoc", "/docs/oauth2-redirect"):
             return await call_next(request)
         configured = os.getenv("COPILOT_API_KEY", "")
         if not configured:
