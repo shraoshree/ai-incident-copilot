@@ -1,0 +1,86 @@
+[
+  {
+    "query": "payment API response time climbed above two seconds",
+    "expected_title": "Payment Service High Latency"
+  },
+  {
+    "query": "backend responds with frequent 500 errors",
+    "expected_title": "High API Error Rate"
+  },
+  {
+    "query": "application processor utilization is pinned near one hundred percent",
+    "expected_title": "High CPU Usage"
+  },
+  {
+    "query": "Kafka consumers cannot keep up with incoming messages",
+    "expected_title": "Kafka Consumer Lag"
+  },
+  {
+    "query": "transactions block one another in a circular wait",
+    "expected_title": "Database Deadlocks"
+  },
+  {
+    "query": "Redis cached value expires triggering simultaneous database reads",
+    "expected_title": "Redis Cache Stampede"
+  },
+  {
+    "query": "server cannot write logs because filesystem is full",
+    "expected_title": "Disk Space Exhaustion"
+  },
+  {
+    "query": "container keeps growing memory until it is killed",
+    "expected_title": "Memory Leak in Backend"
+  },
+  {
+    "query": "Kubernetes workload restarts repeatedly and cannot stabilize",
+    "expected_title": "Kubernetes CrashLoopBackOff"
+  },
+  {
+    "query": "HTTPS clients reject an outdated server certificate",
+    "expected_title": "TLS Certificate Expiry"
+  },
+  {
+    "query": "connection pool slots are all used and new DB requests wait",
+    "expected_title": "Database Connection Pool Saturation"
+  },
+  {
+    "query": "billing event gets handled multiple times after retries",
+    "expected_title": "Message Queue Duplicate Processing"
+  },
+  {
+    "query": "hostname resolution returns intermittent SERVFAIL",
+    "expected_title": "DNS Resolution Failure"
+  },
+  {
+    "query": "query execution becomes slow due to full table scan",
+    "expected_title": "Slow SQL Query Plan"
+  },
+  {
+    "query": "third party endpoint is returning too many requests responses",
+    "expected_title": "Rate Limit Exceeded"
+  },
+  {
+    "query": "upstream calls retry because packets are being dropped",
+    "expected_title": "Network Packet Loss"
+  },
+  {
+    "query": "error rate increased directly after production rollout",
+    "expected_title": "Deployment Regression"
+  },
+  {
+    "query": "service gets unauthorized errors due to expired bearer token",
+    "expected_title": "Expired Access Token"
+  },
+  {
+    "query": "cloud object-store API slows under throttling",
+    "expected_title": "Object Storage Throttling"
+  },
+  {
+    "query": "executor workers all blocked and tasks queue up",
+    "expected_title": "Worker Thread Pool Exhaustion"
+  },
+  {
+    "query": "read-only database replica contains stale records as WAL replay is behind",
+    "expected_title": "PostgreSQL Replication Lag"
+  }
+]
