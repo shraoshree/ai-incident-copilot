@@ -158,7 +158,7 @@ def list_incidents(status: str | None = None, limit: int = 100):
         raise HTTPException(status_code=422, detail="Invalid status")
     with connection() as conn:
         rows = conn.execute(
-            "SELECT * FROM incidents WHERE (%s IS NULL OR status=%s) ORDER BY created_at DESC LIMIT %s",
+            "SELECT * FROM incidents WHERE (%s::text IS NULL OR status=%s::text) ORDER BY created_at DESC LIMIT %s",
             (status, status, limit),
         ).fetchall()
     return {"count": len(rows), "incidents": [_record(r) for r in rows]}
