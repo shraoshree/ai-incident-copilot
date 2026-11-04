@@ -46,3 +46,19 @@ jobs:
         run: python evaluation.py --method keyword
       - name: Live semantic evaluation
         run: python evaluation.py --method semantic
+      - name: End-to-end incident smoke test with Gemini
+        run: |
+          python - <<'PY'
+          from fastapi.testclient import TestClient
+          from main import app
+          client = TestClient(app)
+          payload = {"service": "payment-service", "alert": "API response time degraded", "severity": "critical", "description": "p99 latency increased to 2800 milliseconds; users experience slow checkout"}
+          response = client.post("/incident", json=payload)
+          assert response.status_code == 200, response.text
+          incident = response.json()["incident"]
+          assert incident["retrieval_matches"], "No relevant matches returned"
+          assert incident["analysis_source"] == "gemini", "Generation fell back; inspect workflow output"
+          assert incident["ai_analysis"]["investigation_steps"], "No investigation steps"
+          assert client.get(f"/incidents/{incident[\'incident_id\']}").status_code == 200
+          print("Live Gemini -> pgvector -> Gemini -> PostgreSQL API smoke test passed")
+          PY
