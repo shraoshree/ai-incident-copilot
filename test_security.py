@@ -22,6 +22,12 @@ def test_auth_fail_closed_without_config(monkeypatch):
     assert client.get("/incidents", headers=KEY).status_code == 503
 
 
+def test_placeholder_api_key_rejected(monkeypatch):
+    monkeypatch.setenv("COPILOT_API_KEY", "replace_with_random_32_byte_token")
+    client = TestClient(main.app)
+    assert client.get("/incidents", headers={"X-API-Key": "replace_with_random_32_byte_token"}).status_code == 503
+
+
 def test_redaction_of_common_secrets_and_identifiers():
     raw = "password=hunter2 api_key=ABC123 Authorization: Bearer abc.DEF token=xyz user@example.com 192.168.0.10"
     clean = redact_sensitive(raw)
