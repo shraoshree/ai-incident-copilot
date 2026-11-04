@@ -14,7 +14,7 @@ from database import connection
 
 EMBED_MODEL = os.getenv("EMBED_MODEL", "gemini-embedding-001")
 VECTOR_DIM = 768
-DEFAULT_THRESHOLD = 0.50  # fallback when MIN_SIMILARITY is unset
+DEFAULT_THRESHOLD = 0.65821  # calibrated on synthetic development queries, not production-validated
 
 def embed(text: str, task_type: str) -> list[float]:
     api_key = os.getenv("GEMINI_API_KEY")

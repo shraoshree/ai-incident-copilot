@@ -33,12 +33,22 @@ def test_calibration_uses_dev_rows_only():
         {"split": "dev", "expected_title": None, "hits": [{"title": "a", "score": 0.1}], "top1_score": 0.1, "correct_score": None},
     ]
     threshold, metrics = choose_threshold(dev)
-    assert 0.2 < threshold <= 0.8
+    assert threshold == pytest.approx(0.5)
     assert metrics["balanced_decision_accuracy"] == 1.0
     assert report_metrics(dev, threshold)["negative_abstention_rate"] == 1.0
     test = [{"query": "test positive", "split": "test", "expected_title": "a", "hits": [], "top1_score": 0.0, "correct_score": None},
             {"query": "test negative", "split": "test", "expected_title": None, "hits": [], "top1_score": 0.0, "correct_score": None}]
     assert summarize(dev + test, "bm25")["threshold"] == pytest.approx(threshold)
+
+
+def test_midpoint_uses_only_dev_not_test():
+    from evaluation_robust import development_margin
+    rows = [
+        {"expected_title": "a", "hits": [{"title": "a", "score": .8}], "top1_score": .8},
+        {"expected_title": None, "hits": [{"title": "b", "score": .4}], "top1_score": .4},
+    ]
+    assert development_margin(rows)["midpoint"] == pytest.approx(.6)
+    assert choose_threshold(rows)[0] == pytest.approx(.6)
 
 
 def test_abstention_and_metric_distinguish_no_answer():

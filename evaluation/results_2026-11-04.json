@@ -1,12 +1,18 @@
 {
   "date": "2026-11-04",
-  "source_workflow": "https://github.com/shraoshree/ai-incident-copilot/actions/runs/41857655455",
-  "notes": "Archived output from the live synthetic benchmark; this JSON remains in GitHub when Actions logs expire. All cases were created for the demo project; query-level split only, not external validation.",
+  "source_workflow": "https://github.com/shraoshree/ai-incident-copilot/actions/runs/41859699106",
+  "notes": "Updated November 4 live synthetic benchmark after development-only margin midpoint calibration. The model and examples are synthetic, query-level split only, not independent validation. Threshold 0.65821 is now default in source, but deployed/local env can override.",
   "semantic": {
     "method": "semantic",
     "benchmark": "synthetic, query-level dev/test split, not independent",
-    "threshold": 0.61235,
-    "threshold_selection": "max dev balanced decision accuracy; tie => lower threshold",
+    "threshold": 0.65821,
+    "threshold_selection": "midpoint of full development separation margin",
+    "dev_margin": {
+      "max_dev_irrelevant": 0.61007,
+      "min_dev_correct": 0.70635,
+      "gap": 0.09628000000000003,
+      "midpoint": 0.65821
+    },
     "dev": {
       "positive_cases": 11,
       "negative_cases": 6,
@@ -25,9 +31,9 @@
       "hit_at_3": 1,
       "mrr_at_3": 1,
       "positive_coverage": 1,
-      "negative_abstention_rate": 0.8333,
-      "negative_false_accept_rate": 0.1667,
-      "balanced_decision_accuracy": 0.9167
+      "negative_abstention_rate": 1,
+      "negative_false_accept_rate": 0,
+      "balanced_decision_accuracy": 1
     },
     "test_scores": {
       "correct_relevant_top3": {
@@ -158,21 +164,22 @@
         "expected_title": null,
         "top1": "Deployment Regression",
         "top1_score": 0.6262,
-        "accepted": true
+        "accepted": false
       }
     ]
   },
   "bm25": {
     "method": "bm25",
     "benchmark": "synthetic, query-level dev/test split, not independent",
-    "threshold": 3.82436465,
-    "threshold_selection": "max dev balanced decision accuracy; tie => lower threshold",
+    "threshold": 3.93991886,
+    "threshold_selection": "max development balanced decision accuracy; median tie",
+    "dev_margin": null,
     "dev": {
       "positive_cases": 11,
       "negative_cases": 6,
       "hit_at_1": 0.7273,
-      "hit_at_3": 0.9091,
-      "mrr_at_3": 0.803,
+      "hit_at_3": 0.8182,
+      "mrr_at_3": 0.7576,
       "positive_coverage": 0.9091,
       "negative_abstention_rate": 1,
       "negative_false_accept_rate": 0,
