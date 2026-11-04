@@ -9,7 +9,7 @@ import main
 from evaluation import metrics
 from retrieval import context_from_matches, keyword_search, parse_knowledge
 
-client = TestClient(main.app)
+client = TestClient(main.app, headers={"X-API-Key": "test-only-copilot-secret"})
 
 def test_home():
     assert client.get("/").json()["message"] == "AI Incident Copilot is running"

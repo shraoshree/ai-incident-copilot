@@ -26,5 +26,10 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: pytest -q
+      - name: Load-test health endpoint without Gemini requests
+        run: |
+          COPILOT_API_KEY=test-only-copilot-secret uvicorn main:app --host 127.0.0.1 --port 8000 > /tmp/copilot-uvicorn.log 2>&1 &
+          sleep 3
+          python load_test.py --requests 100 --concurrency 10
       - name: Keyword baseline benchmark (no API required)
         run: python evaluation.py --method keyword

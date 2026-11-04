@@ -24,6 +24,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://copilot:test_only@localhost:5432/incidents_live_test
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      COPILOT_API_KEY: test-only-copilot-secret
       GEMINI_MODEL: gemini-3.6-flash
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +53,7 @@ jobs:
           python - <<'PY'
           from fastapi.testclient import TestClient
           from main import app
-          client = TestClient(app)
+          client = TestClient(app, headers={"X-API-Key": "test-only-copilot-secret"})
           payload = {"service": "payment-service", "alert": "API response time degraded", "severity": "critical", "description": "p99 latency increased to 2800 milliseconds; users experience slow checkout"}
           response = client.post("/incident", json=payload)
           assert response.status_code == 200, response.text

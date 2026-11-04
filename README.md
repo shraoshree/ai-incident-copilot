@@ -12,6 +12,7 @@ I built this to explore a problem I worked around in production support: when an
 - Saves the incident, retrieval matches, analysis source, and status in PostgreSQL.
 - Supports listing incidents, viewing statistics, and updating status from open to investigating to resolved.
 - Returns a conservative fallback analysis if the generation service is unavailable.
+- Requires an API key for incident endpoints, limits requests per client, and masks common secrets before retrieval, AI generation, and storage.
 
 ## Why I changed the retrieval approach
 
@@ -78,7 +79,13 @@ The live smoke test exercised the complete path: Gemini embedding, pgvector retr
 
 Requirements: Python 3.12, Docker, and a Gemini API key with access to the embedding and generation models.
 
-1. Copy the environment example and add your API key to the local `.env` file. Do not commit it.
+1. Copy the environment example and add your Gemini API key and a separate, randomly generated `COPILOT_API_KEY` to the local `.env` file. Do not commit either key.
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Use the printed token as `COPILOT_API_KEY`. It is different from your Gemini API key.
 
 ```bash
 cp .env.example .env
@@ -104,7 +111,7 @@ python retrieval.py ingest
 uvicorn main:app --reload
 ```
 
-Open `http://localhost:8000/docs` to try the endpoints through FastAPI's interactive documentation.
+Open `http://localhost:8000/docs` to try the endpoints through FastAPI's interactive documentation. Click **Authorize** and enter the value of `COPILOT_API_KEY` before calling protected endpoints. The `/` and `/health` endpoints remain accessible without a key.
 
 Alternatively, run both the API and database in Docker:
 
@@ -137,6 +144,26 @@ The response contains the incident ID, retrieved knowledge matches and similarit
 | `PATCH /incidents/{incident_id}/status` | Move an incident through its allowed status transitions |
 | `GET /stats` | View incident counts by status and critical severity |
 | `GET /knowledge` | Inspect the sample knowledge base |
+
+## Production-readiness safeguards
+
+- **API authentication:** All incident, stats, and knowledge endpoints require the `X-API-Key` header. If `COPILOT_API_KEY` is missing, protected routes fail closed. This is a single shared demo key, not user accounts or role-based permissions.
+- **Rate limiting:** An in-process sliding-window limiter permits 20 incident submissions per client IP per minute and 120 other authenticated requests per minute. Excess traffic receives HTTP 429 and `Retry-After`. These limits reset on restart and are not coordinated across workers or replicas.
+- **Sensitive-data masking:** Before embedding an incoming incident, sending it to Gemini, or persisting it, the API masks common credential patterns, bearer tokens, email addresses, and IPv4 addresses. Regex-based redaction cannot catch every secret or personally identifiable value. Never submit real confidential incident data without a stronger data-classification and redaction pipeline.
+- **Payload cap:** Requests with a declared content length above 32 KiB are rejected. This is a basic safeguard, not a complete streaming body-size defense.
+- **API documentation:** Swagger is public locally, but its incident operations require authorization.
+
+These controls improve the local portfolio prototype. Internet-facing production use would still require TLS, per-user identity and authorization, a shared rate limiter, audited key rotation, stronger privacy controls, and operational monitoring.
+
+## Load testing (no Gemini calls)
+
+The included load test calls **only** `GET /health`, so running it does not invoke Gemini or use embedding tokens:
+
+```bash
+python load_test.py --url http://localhost:8000 --requests 100 --concurrency 10
+```
+
+It reports throughput, success rate, average latency, and p50/p95/p99 latency. The benchmark runs against your own machine; numbers depend on local hardware and database state. GitHub CI also runs 100 health requests with concurrency 10. In one GitHub Actions run, **100/100 requests succeeded**, with about **67.75 requests/second** and **214.55 ms p95 latency**. These are measurements of the database-backed health endpoint on a shared CI runner, not the Gemini analysis endpoint or a production performance guarantee. [Load-test run](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41856010469).
 
 ## Testing
 
@@ -177,4 +204,4 @@ docker-compose.yml         Local database and API containers
 
 This is a locally runnable portfolio prototype, not a production incident-management platform. The incident corpus is synthetic, and the API does not yet include authentication, sensitive-data redaction, or rate limiting. The demo database password is for local development only. Do not expose this configuration publicly or use it to store real incident details.
 
-The next useful improvements would be a held-out evaluation set with irrelevant queries, threshold calibration, access controls, and more realistic incident records. Those are separate from the working portfolio milestone.
+The next useful improvements would be a held-out evaluation set with irrelevant queries, threshold calibration, per-user access controls, stronger redaction, a multi-instance rate limiter, and more realistic incident records. Those are separate from the working portfolio milestone.
