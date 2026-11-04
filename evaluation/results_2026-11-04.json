@@ -4,10 +4,163 @@
   "notes": "Archived output from the live synthetic benchmark; this JSON remains in GitHub when Actions logs expire. All cases were created for the demo project; query-level split only, not external validation.",
   "semantic": {
     "method": "semantic",
-    "cases": 21,
-    "hit_at_1": 1,
-    "hit_at_3": 1,
-    "mrr_at_3": 1
+    "benchmark": "synthetic, query-level dev/test split, not independent",
+    "threshold": 0.61235,
+    "threshold_selection": "max dev balanced decision accuracy; tie => lower threshold",
+    "dev": {
+      "positive_cases": 11,
+      "negative_cases": 6,
+      "hit_at_1": 1,
+      "hit_at_3": 1,
+      "mrr_at_3": 1,
+      "positive_coverage": 1,
+      "negative_abstention_rate": 1,
+      "negative_false_accept_rate": 0,
+      "balanced_decision_accuracy": 1
+    },
+    "test": {
+      "positive_cases": 10,
+      "negative_cases": 6,
+      "hit_at_1": 1,
+      "hit_at_3": 1,
+      "mrr_at_3": 1,
+      "positive_coverage": 1,
+      "negative_abstention_rate": 0.8333,
+      "negative_false_accept_rate": 0.1667,
+      "balanced_decision_accuracy": 0.9167
+    },
+    "test_scores": {
+      "correct_relevant_top3": {
+        "count": 10,
+        "min": 0.6981,
+        "p10": 0.7008,
+        "median": 0.7261,
+        "p90": 0.7493,
+        "max": 0.7662
+      },
+      "irrelevant_query_top1": {
+        "count": 6,
+        "min": 0.5363,
+        "p10": 0.5363,
+        "median": 0.5618,
+        "p90": 0.5783,
+        "max": 0.6262
+      }
+    },
+    "test_examples": [
+      {
+        "query": "backend responds with frequent 500 errors",
+        "expected_title": "High API Error Rate",
+        "top1": "High API Error Rate",
+        "top1_score": 0.7013,
+        "accepted": true
+      },
+      {
+        "query": "Kafka consumers cannot keep up with incoming messages",
+        "expected_title": "Kafka Consumer Lag",
+        "top1": "Kafka Consumer Lag",
+        "top1_score": 0.7201,
+        "accepted": true
+      },
+      {
+        "query": "Redis cached value expires triggering simultaneous database reads",
+        "expected_title": "Redis Cache Stampede",
+        "top1": "Redis Cache Stampede",
+        "top1_score": 0.7329,
+        "accepted": true
+      },
+      {
+        "query": "container keeps growing memory until it is killed",
+        "expected_title": "Memory Leak in Backend",
+        "top1": "Memory Leak in Backend",
+        "top1_score": 0.7008,
+        "accepted": true
+      },
+      {
+        "query": "HTTPS clients reject an outdated server certificate",
+        "expected_title": "TLS Certificate Expiry",
+        "top1": "TLS Certificate Expiry",
+        "top1_score": 0.7056,
+        "accepted": true
+      },
+      {
+        "query": "billing event gets handled multiple times after retries",
+        "expected_title": "Message Queue Duplicate Processing",
+        "top1": "Message Queue Duplicate Processing",
+        "top1_score": 0.7662,
+        "accepted": true
+      },
+      {
+        "query": "query execution becomes slow due to full table scan",
+        "expected_title": "Slow SQL Query Plan",
+        "top1": "Slow SQL Query Plan",
+        "top1_score": 0.7476,
+        "accepted": true
+      },
+      {
+        "query": "upstream calls retry because packets are being dropped",
+        "expected_title": "Network Packet Loss",
+        "top1": "Network Packet Loss",
+        "top1_score": 0.6981,
+        "accepted": true
+      },
+      {
+        "query": "service gets unauthorized errors due to expired bearer token",
+        "expected_title": "Expired Access Token",
+        "top1": "Expired Access Token",
+        "top1_score": 0.7493,
+        "accepted": true
+      },
+      {
+        "query": "executor workers all blocked and tasks queue up",
+        "expected_title": "Worker Thread Pool Exhaustion",
+        "top1": "Worker Thread Pool Exhaustion",
+        "top1_score": 0.7321,
+        "accepted": true
+      },
+      {
+        "query": "online store calculates the wrong sales tax for one postal code",
+        "expected_title": null,
+        "top1": "Message Queue Duplicate Processing",
+        "top1_score": 0.5363,
+        "accepted": false
+      },
+      {
+        "query": "customer support dashboard uses the wrong currency conversion rate",
+        "expected_title": null,
+        "top1": "Message Queue Duplicate Processing",
+        "top1_score": 0.5458,
+        "accepted": false
+      },
+      {
+        "query": "a food delivery route optimizer chooses a longer route than necessary",
+        "expected_title": null,
+        "top1": "Slow SQL Query Plan",
+        "top1_score": 0.5783,
+        "accepted": false
+      },
+      {
+        "query": "account deletion privacy request waits for manager approval",
+        "expected_title": null,
+        "top1": "Memory Leak in Backend",
+        "top1_score": 0.5438,
+        "accepted": false
+      },
+      {
+        "query": "satellite sensor measurements drift after a hardware calibration",
+        "expected_title": null,
+        "top1": "Network Packet Loss",
+        "top1_score": 0.5779,
+        "accepted": false
+      },
+      {
+        "query": "a mobile app shows yesterday's weather forecast despite receiving today's data",
+        "expected_title": null,
+        "top1": "Deployment Regression",
+        "top1_score": 0.6262,
+        "accepted": true
+      }
+    ]
   },
   "bm25": {
     "method": "bm25",
