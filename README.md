@@ -163,7 +163,7 @@ The included load test calls **only** `GET /health`, so running it does not invo
 python load_test.py --url http://localhost:8000 --requests 100 --concurrency 10
 ```
 
-It reports throughput, success rate, average latency, and p50/p95/p99 latency. The benchmark runs against your own machine; numbers depend on local hardware and database state. GitHub CI also runs 100 health requests with concurrency 10. This is not a full stress test of the AI generation path.
+It reports throughput, success rate, average latency, and p50/p95/p99 latency. The benchmark runs against your own machine; numbers depend on local hardware and database state. GitHub CI also runs 100 health requests with concurrency 10. In one GitHub Actions run, **100/100 requests succeeded**, with about **67.75 requests/second** and **214.55 ms p95 latency**. These are measurements of the database-backed health endpoint on a shared CI runner, not the Gemini analysis endpoint or a production performance guarantee. [Load-test run](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41856010469).
 
 ## Testing
 
