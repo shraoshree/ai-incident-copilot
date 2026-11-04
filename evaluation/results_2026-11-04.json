@@ -1,0 +1,172 @@
+{
+  "date": "2026-11-04",
+  "source_workflow": "https://github.com/shraoshree/ai-incident-copilot/actions/runs/41857655455",
+  "notes": "Archived output from the live synthetic benchmark; this JSON remains in GitHub when Actions logs expire. All cases were created for the demo project; query-level split only, not external validation.",
+  "semantic": {
+    "method": "semantic",
+    "cases": 21,
+    "hit_at_1": 1,
+    "hit_at_3": 1,
+    "mrr_at_3": 1
+  },
+  "bm25": {
+    "method": "bm25",
+    "benchmark": "synthetic, query-level dev/test split, not independent",
+    "threshold": 3.82436465,
+    "threshold_selection": "max dev balanced decision accuracy; tie => lower threshold",
+    "dev": {
+      "positive_cases": 11,
+      "negative_cases": 6,
+      "hit_at_1": 0.7273,
+      "hit_at_3": 0.9091,
+      "mrr_at_3": 0.803,
+      "positive_coverage": 0.9091,
+      "negative_abstention_rate": 1,
+      "negative_false_accept_rate": 0,
+      "balanced_decision_accuracy": 0.8636
+    },
+    "test": {
+      "positive_cases": 10,
+      "negative_cases": 6,
+      "hit_at_1": 0.6,
+      "hit_at_3": 0.7,
+      "mrr_at_3": 0.65,
+      "positive_coverage": 0.9,
+      "negative_abstention_rate": 0.8333,
+      "negative_false_accept_rate": 0.1667,
+      "balanced_decision_accuracy": 0.7167
+    },
+    "test_scores": {
+      "correct_relevant_top3": {
+        "count": 8,
+        "min": 3.7869,
+        "p10": 4.5692,
+        "median": 9.5577,
+        "p90": 12.1126,
+        "max": 12.7264
+      },
+      "irrelevant_query_top1": {
+        "count": 6,
+        "min": 0,
+        "p10": 0,
+        "median": 2.254,
+        "p90": 2.6435,
+        "max": 7.3593
+      }
+    },
+    "test_examples": [
+      {
+        "query": "backend responds with frequent 500 errors",
+        "expected_title": "High API Error Rate",
+        "top1": "Memory Leak in Backend",
+        "top1_score": 2.6733,
+        "accepted": false
+      },
+      {
+        "query": "Kafka consumers cannot keep up with incoming messages",
+        "expected_title": "Kafka Consumer Lag",
+        "top1": "Kafka Consumer Lag",
+        "top1_score": 4.5692,
+        "accepted": true
+      },
+      {
+        "query": "Redis cached value expires triggering simultaneous database reads",
+        "expected_title": "Redis Cache Stampede",
+        "top1": "Redis Cache Stampede",
+        "top1_score": 9.8114,
+        "accepted": true
+      },
+      {
+        "query": "container keeps growing memory until it is killed",
+        "expected_title": "Memory Leak in Backend",
+        "top1": "Memory Leak in Backend",
+        "top1_score": 12.1126,
+        "accepted": true
+      },
+      {
+        "query": "HTTPS clients reject an outdated server certificate",
+        "expected_title": "TLS Certificate Expiry",
+        "top1": "TLS Certificate Expiry",
+        "top1_score": 8.3608,
+        "accepted": true
+      },
+      {
+        "query": "billing event gets handled multiple times after retries",
+        "expected_title": "Message Queue Duplicate Processing",
+        "top1": "Network Packet Loss",
+        "top1_score": 4.3646,
+        "accepted": true
+      },
+      {
+        "query": "query execution becomes slow due to full table scan",
+        "expected_title": "Slow SQL Query Plan",
+        "top1": "Slow SQL Query Plan",
+        "top1_score": 12.7264,
+        "accepted": true
+      },
+      {
+        "query": "upstream calls retry because packets are being dropped",
+        "expected_title": "Network Packet Loss",
+        "top1": "DNS Resolution Failure",
+        "top1_score": 3.9801,
+        "accepted": true
+      },
+      {
+        "query": "service gets unauthorized errors due to expired bearer token",
+        "expected_title": "Expired Access Token",
+        "top1": "Network Packet Loss",
+        "top1_score": 10.4161,
+        "accepted": true
+      },
+      {
+        "query": "executor workers all blocked and tasks queue up",
+        "expected_title": "Worker Thread Pool Exhaustion",
+        "top1": "Worker Thread Pool Exhaustion",
+        "top1_score": 9.3039,
+        "accepted": true
+      },
+      {
+        "query": "online store calculates the wrong sales tax for one postal code",
+        "expected_title": null,
+        "top1": null,
+        "top1_score": 0,
+        "accepted": false
+      },
+      {
+        "query": "customer support dashboard uses the wrong currency conversion rate",
+        "expected_title": null,
+        "top1": "Rate Limit Exceeded",
+        "top1_score": 2.2821,
+        "accepted": false
+      },
+      {
+        "query": "a food delivery route optimizer chooses a longer route than necessary",
+        "expected_title": null,
+        "top1": "Slow SQL Query Plan",
+        "top1_score": 7.3593,
+        "accepted": true
+      },
+      {
+        "query": "account deletion privacy request waits for manager approval",
+        "expected_title": null,
+        "top1": "Object Storage Throttling",
+        "top1_score": 2.2259,
+        "accepted": false
+      },
+      {
+        "query": "satellite sensor measurements drift after a hardware calibration",
+        "expected_title": null,
+        "top1": "Deployment Regression",
+        "top1_score": 2.6435,
+        "accepted": false
+      },
+      {
+        "query": "a mobile app shows yesterday's weather forecast despite receiving today's data",
+        "expected_title": null,
+        "top1": null,
+        "top1_score": 0,
+        "accepted": false
+      }
+    ]
+  }
+}
