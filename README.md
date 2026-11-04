@@ -1,6 +1,6 @@
 # AI Incident Copilot — Vector RAG Prototype
 
-Backend service for incident triage using **FastAPI, PostgreSQL + pgvector, Gemini embeddings, and Gemini structured generation**. It retrieves relevant historical incidents, presents them to the model as untrusted reference context, validates output, and stores a lifecycle record in PostgreSQL.
+Backend service for incident triage using **FastAPI, PostgreSQL + pgvector, Gemini embeddings, and Gemini 3.8 Flash structured generation**. It retrieves relevant historical incidents, presents them to the model as untrusted reference context, validates output, and stores a lifecycle record in PostgreSQL.
 
 > **Verification status (2026-11-04):** Live Gemini embeddings and pgvector retrieval were successfully exercised in GitHub Actions, including ingestion of all 21 synthetic incidents. Retrieval accuracy figures below are specific to a small, illustrative synthetic benchmark, not production or held-out performance. The full Gemini generation API smoke test is checked separately in CI.
 
