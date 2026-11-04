@@ -193,7 +193,10 @@ def summarize(rows: list[dict], method: str) -> dict:
         "method": method,
         "benchmark": "synthetic, query-level dev/test split, not independent",
         "threshold": round(threshold, 8),
-        "threshold_selection": ("midpoint of full development separation margin"\n                                if development_margin(dev) is not None else\n                                "max development balanced decision accuracy; median tie"),\n        "dev_margin": development_margin(dev),
+        "threshold_selection": ("midpoint of full development separation margin"
+                                if development_margin(dev) is not None else
+                                "max development balanced decision accuracy; median tie"),
+        "dev_margin": development_margin(dev),
         "dev": dev_metrics,
         "test": report_metrics(test, threshold),
         "test_scores": {
