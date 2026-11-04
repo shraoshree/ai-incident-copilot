@@ -31,5 +31,7 @@ jobs:
           COPILOT_API_KEY=test-only-copilot-secret uvicorn main:app --host 127.0.0.1 --port 8000 > /tmp/copilot-uvicorn.log 2>&1 &
           sleep 3
           python load_test.py --requests 100 --concurrency 10
+      - name: BM25 and abstention benchmark (no API required)
+        run: python evaluation_robust.py --method bm25
       - name: Keyword baseline benchmark (no API required)
         run: python evaluation.py --method keyword
