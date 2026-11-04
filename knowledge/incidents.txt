@@ -1,26 +1,104 @@
 Incident: Payment Service High Latency
-Symptoms: p99 API latency above 2000ms.
-Possible cause: Database connection pool exhaustion.
-Recommended checks:
-1. Check active database connections.
-2. Check slow database queries.
-3. Check application CPU and memory.
-4. Check recent deployments.
+Symptoms: p99 API latency above 2000ms; requests slow; database connection pool exhaustion.
+Possible cause: database connection pool exhaustion.
+Recommended checks: Check active database connections; check slow database queries; review deployments.
 
 Incident: High API Error Rate
-Symptoms: HTTP 5xx error rate above 5%.
-Possible cause: Downstream service failure.
-Recommended checks:
-1. Check downstream service health.
-2. Check application logs.
-3. Check recent deployments.
-4. Check network connectivity.
+Symptoms: HTTP 5xx errors exceed five percent; downstream dependency unavailable.
+Possible cause: downstream dependency unavailable.
+Recommended checks: Check downstream health; inspect HTTP status and logs.
 
 Incident: High CPU Usage
-Symptoms: Application CPU usage above 90%.
-Possible cause: Traffic spike or expensive application processing.
-Recommended checks:
-1. Check request traffic.
-2. Check expensive endpoints.
-3. Check application logs.
-4. Check recent deployments.
+Symptoms: application CPU usage over 90 percent; hot loop or traffic spike.
+Possible cause: hot loop or traffic spike.
+Recommended checks: Profile expensive endpoints; inspect host CPU and traffic.
+
+Incident: Kafka Consumer Lag
+Symptoms: consumer group falling behind producers; Kafka partition lag increasing.
+Possible cause: Kafka partition lag increasing.
+Recommended checks: Inspect consumer offset lag; processing throughput and rebalances.
+
+Incident: Database Deadlocks
+Symptoms: concurrent transactions are deadlocked while updating rows.
+Possible cause: concurrent transactions are deadlocked while updating rows.
+Recommended checks: Inspect database deadlock logs; transaction lock order.
+
+Incident: Redis Cache Stampede
+Symptoms: cache expires and many requests overwhelm database simultaneously.
+Possible cause: cache expires and many requests overwhelm database simultaneously.
+Recommended checks: Inspect Redis TTL and cache miss rate; singleflight protection.
+
+Incident: Disk Space Exhaustion
+Symptoms: filesystem full due to rotating application log growth.
+Possible cause: filesystem full due to rotating application log growth.
+Recommended checks: Check disk usage, log rotation and cleanup.
+
+Incident: Memory Leak in Backend
+Symptoms: process resident memory steadily increases until OOM killed.
+Possible cause: process resident memory steadily increases until OOM killed.
+Recommended checks: Inspect heap allocations and Kubernetes OOM events.
+
+Incident: Kubernetes CrashLoopBackOff
+Symptoms: pod repeatedly restarts due to failed startup or configuration.
+Possible cause: pod repeatedly restarts due to failed startup or configuration.
+Recommended checks: Inspect kubectl describe, previous container logs and readiness.
+
+Incident: TLS Certificate Expiry
+Symptoms: client connection handshake errors after server certificate expired.
+Possible cause: client connection handshake errors after server certificate expired.
+Recommended checks: Inspect TLS expiry, chain and renewal process.
+
+Incident: Database Connection Pool Saturation
+Symptoms: database connections exhausted; waiters timeout under load.
+Possible cause: waiters timeout under load.
+Recommended checks: Inspect max pool size, active connections and slow transactions.
+
+Incident: Message Queue Duplicate Processing
+Symptoms: at least once delivery creates duplicate billing events.
+Possible cause: at least once delivery creates duplicate billing events.
+Recommended checks: Inspect retry policies, idempotency keys and consumer commits.
+
+Incident: DNS Resolution Failure
+Symptoms: upstream hostname lookup fails intermittently SERVFAIL.
+Possible cause: upstream hostname lookup fails intermittently SERVFAIL.
+Recommended checks: Inspect CoreDNS logs, DNS records and resolver errors.
+
+Incident: Slow SQL Query Plan
+Symptoms: new full table scans after query optimizer chooses costly plan.
+Possible cause: new full table scans after query optimizer chooses costly plan.
+Recommended checks: Inspect EXPLAIN plan, indexes and cardinality statistics.
+
+Incident: Rate Limit Exceeded
+Symptoms: outbound API HTTP 429 responses on burst traffic.
+Possible cause: outbound API HTTP 429 responses on burst traffic.
+Recommended checks: Inspect quotas, client backoff and request rate.
+
+Incident: Network Packet Loss
+Symptoms: service to service retries and timeouts due to packet drops.
+Possible cause: service to service retries and timeouts due to packet drops.
+Recommended checks: Inspect network interface errors and connection retries.
+
+Incident: Deployment Regression
+Symptoms: new release increases errors and latency immediately after rollout.
+Possible cause: new release increases errors and latency immediately after rollout.
+Recommended checks: Compare release metrics, rollback and diff.
+
+Incident: Expired Access Token
+Symptoms: service HTTP 401 from invalid or expired credentials.
+Possible cause: service HTTP 401 from invalid or expired credentials.
+Recommended checks: Inspect token expiration, rotation and authentication logs.
+
+Incident: Object Storage Throttling
+Symptoms: storage requests receive throttling and retry storms.
+Possible cause: storage requests receive throttling and retry storms.
+Recommended checks: Inspect request rate, storage quotas and retry settings.
+
+Incident: Worker Thread Pool Exhaustion
+Symptoms: thread pool queued tasks grow and requests stall.
+Possible cause: thread pool queued tasks grow and requests stall.
+Recommended checks: Inspect executor thread count, queue depth and blocking tasks.
+
+Incident: PostgreSQL Replication Lag
+Symptoms: read replica serves stale records because WAL replay falls behind.
+Possible cause: read replica serves stale records because WAL replay falls behind.
+Recommended checks: Inspect WAL replay lag and replica load.
