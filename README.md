@@ -74,11 +74,11 @@ Both methods retrieve their top three candidates. The BM25 baseline uses Okapi B
 | Hit@1, on positives | **100%** | 60% |
 | Hit@3, on positives | **100%** | 70% |
 | MRR@3, on positives | **100%** | 65% |
-| No-answer queries correctly rejected | 5 of 6 | 5 of 6 |
-| No-answer queries incorrectly accepted | 1 of 6 | 1 of 6 |
-| Development-selected threshold | 0.61235 cosine similarity | 3.82436 BM25 score |
+| No-answer queries correctly rejected | **6 of 6** | 5 of 6 |
+| No-answer queries incorrectly accepted | **0 of 6** | 1 of 6 |
+| Development-selected threshold | **0.65821** cosine similarity | 3.93992 BM25 score |
 
-The semantic retriever ranked the correct incident first for all 10 answerable test queries, but it also **incorrectly accepted 1 of 6 irrelevant queries**. BM25 also rejected 5 of 6 no-answer queries, so the measured semantic advantage was on positive retrieval, not abstention. With only six no-answer test queries, a single case changes the result by one-sixth. This sample is too small for a reliable general abstention estimate.
+With the dev-only midpoint cutoff, the semantic retriever ranked the correct incident first for **all 10 answerable test queries** and rejected **all 6 no-answer test queries**. BM25 ranked 6 of 10 answerable queries first and rejected 5 of 6 no-answer queries. The small differences in rejection counts are not evidence of a reliable abstention advantage: with only six no-answer cases, a single outcome changes the count substantially. This is an illustrative synthetic test, not proof of general reliability.
 
 ### What the similarity scores tell us
 
@@ -90,9 +90,9 @@ Cosine similarity is reported on the semantic results. The test distributions ar
 | Median | 0.7261 | 0.5618 |
 | Maximum | 0.7662 | 0.6262 |
 
-The development-selected cutoff was **0.61235**. One irrelevant test query scored **0.6262**, crossing the cutoff and producing a false acceptance. This shows why a threshold calibrated on a small set cannot be treated as universally reliable. BM25 values are different scoring units, so they should not be compared directly with cosine similarities.
+The new development-selected midpoint cutoff is **0.65821**, calculated from the *development* separation between the highest no-answer score (**0.61007**) and the lowest correct top-1 score (**0.70635**). The earlier cutoff **0.61235** incorrectly accepted a no-answer test query scoring **0.6262**. The midpoint rejected that query without inspecting test scores during calibration. A clean gap in a few synthetic queries still cannot establish reliable behavior on unseen incidents. BM25 values are different scoring units, so they should not be compared directly with cosine similarities.
 
-**Important:** The application currently defaults to `MIN_SIMILARITY=0.50`. The 0.61235 threshold is an **evaluation result**, not a silently deployed production setting. It needs validation on independent data before being adopted for real use.
+**Default now aligned:** The source default and `.env.example` use `MIN_SIMILARITY=0.65821`, matching the development-only midpoint. This is still an experimental setting, not a production-validated threshold. If you already created a local `.env` containing `MIN_SIMILARITY=0.50`, update it manually - environment overrides take precedence.
 
 ### Previous baseline and metric interpretation
 
@@ -108,8 +108,8 @@ python evaluation_robust.py --method semantic
 BM25 requires no Gemini calls. Semantic evaluation uses the configured embedding API and ingested pgvector database; mind your API free-tier limits.
 
 - [Committed evaluation results](evaluation/results_2026-11-04.json) - preserved in the repository even if GitHub Actions logs expire.
-- [Live semantic and BM25 benchmark workflow](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41857655455)
-- [Automated evaluation and integration tests](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41857795046)
+- [Live semantic and BM25 benchmark workflow](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41859699106)
+- [Automated evaluation and integration tests](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41859660967)
 
 These are synthetic scenarios, created for this project. They are split by **query**, not by incident or author. The test queries share the same 21 incident concepts used for development; the benchmark is not independently authored, does not measure root-cause diagnosis accuracy, and remains too small to claim production-grade abstention.
 
