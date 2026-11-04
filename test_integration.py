@@ -73,7 +73,7 @@ def test_api_end_to_end_with_real_db_and_stub_embeddings(db, monkeypatch):
     monkeypatch.setattr(main, "analyze_incident", lambda incident, context: (
         main.fallback("LLM unavailable"), "fallback"
     ))
-    client = TestClient(main.app)
+    client = TestClient(main.app, headers={"X-API-Key": "test-only-copilot-secret"})
     assert client.get("/health").status_code == 200
     payload = {
         "service": "payments", "alert": "DB pool exhaustion", "severity": "critical",
