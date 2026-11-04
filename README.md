@@ -2,7 +2,7 @@
 
 Backend service for incident triage using **FastAPI, PostgreSQL + pgvector, Gemini embeddings, and Gemini 3.6 Flash structured generation**. It retrieves relevant historical incidents, presents them to the model as untrusted reference context, validates output, and stores a lifecycle record in PostgreSQL.
 
-> **Verification status (2026-11-04):** Live Gemini embeddings and pgvector retrieval were successfully exercised in GitHub Actions, including ingestion of all 21 synthetic incidents. Retrieval accuracy figures below are specific to a small, illustrative synthetic benchmark, not production or held-out performance. The full Gemini generation API smoke test is checked separately in CI.
+> **Verification status (2026-11-04):** Live Gemini embeddings and pgvector retrieval were successfully exercised in GitHub Actions, including ingestion of all 21 synthetic incidents. Retrieval accuracy figures below are specific to a small, illustrative synthetic benchmark, not production or held-out performance. The full end-to-end request using Gemini 3.6 Flash generation, pgvector retrieval, and PostgreSQL storage also **passed** in GitHub Actions. See [successful live end-to-end run](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41853600620).
 
 ## Architecture
 
@@ -77,7 +77,20 @@ python evaluation.py --method semantic
 pytest -q
 ```
 
-**Verified live retrieval benchmark (21 labeled paraphrase cases, GitHub Actions 2026-11-04):**\n\n| Retriever | Hit@1 | Hit@3 | MRR@3 |\n|---|---:|---:|---:|\n| Original keyword (first matching block) | 0.4286 | 0.4286 | 0.4286 |\n| Gemini embeddings + pgvector top-3 | **1.0000** | **1.0000** | **1.0000** |\n\nThat is 9/21 vs 21/21 correct at rank 1, an improvement of **57.14 percentage points** on this limited synthetic benchmark. The examples are constructed from the same incident scenarios and are not a held-out real-world test; these scores cannot establish production root-cause accuracy. [Live evaluation run](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41851666221).\n\n**CI verification:** 12 unit + PostgreSQL/pgvector integration tests passed on GitHub Actions (Nov 4, 2026), including real vector ranking and incident lifecycle tests using deterministic embeddings.\n\n**Live evaluation workflow:** `.github/workflows/live-evaluation.yml` runs on a workflow-file change to this feature branch or manual dispatch once available on the default branch. It uses the existing GitHub repository secret (`GEMINI_API_KEY`), provisions a temporary pgvector database, and runs the keyword/semantic benchmarks and an API smoke test. Do not enable paid Gemini billing; if the free tier is exhausted, stop rather than upgrade. Never paste API keys into issues, commits or chat.\n\nMetrics: Hit@1, Hit@3, MRR@3; the keyword baseline returns only the **first** match, mirroring the original implementation. These comparisons are for development only: tuning `MIN_SIMILARITY` on the same 21 examples would contaminate evaluation. Create an independent, held-out test set before claiming an improvement. Negative queries and abstention accuracy also need dedicated evaluation.
+**Verified live retrieval benchmark (21 labeled paraphrase cases, GitHub Actions 2026-11-04):**
+
+| Retriever | Hit@1 | Hit@3 | MRR@3 |
+|---|---:|---:|---:|
+| Original keyword (first matching block) | 0.4286 | 0.4286 | 0.4286 |
+| Gemini embeddings + pgvector top-3 | **1.0000** | **1.0000** | **1.0000** |
+
+That is 9/21 vs 21/21 correct at rank 1, an improvement of **57.14 percentage points** on this limited synthetic benchmark. The examples are constructed from the same incident scenarios and are not a held-out real-world test; these scores cannot establish production root-cause accuracy. [Live evaluation run](https://github.com/shraoshree/ai-incident-copilot/actions/runs/41851666221).
+
+**CI verification:** 12 unit + PostgreSQL/pgvector integration tests passed on GitHub Actions (Nov 4, 2026), including real vector ranking and incident lifecycle tests using deterministic embeddings.
+
+**Live evaluation workflow:** `.github/workflows/live-evaluation.yml` runs on a workflow-file change to this feature branch or manual dispatch once available on the default branch. It uses the existing GitHub repository secret (`GEMINI_API_KEY`), provisions a temporary pgvector database, and runs the keyword/semantic benchmarks and an API smoke test. Do not enable paid Gemini billing; if the free tier is exhausted, stop rather than upgrade. Never paste API keys into issues, commits or chat.
+
+Metrics: Hit@1, Hit@3, MRR@3; the keyword baseline returns only the **first** match, mirroring the original implementation. These comparisons are for development only: tuning `MIN_SIMILARITY` on the same 21 examples would contaminate evaluation. Create an independent, held-out test set before claiming an improvement. Negative queries and abstention accuracy also need dedicated evaluation.
 
 ## Reliability and security considerations
 
@@ -105,6 +118,6 @@ docker-compose.yml      local pgvector database + application
 .github/workflows/      unit-test CI
 ```
 
-### Next validation
+### Optional next steps beyond the portfolio milestone
 
-Unit and database integration paths were exercised in GitHub Actions. **Still required before calling this production-ready:** a held-out real-world labeled dataset, negative-query abstention tests, threshold calibration on a separate development set, load testing, authenticated access, and data-redaction controls. The current benchmark is a meaningful functional check, not proof of reliability in production. Do not call the application production-ready before authentication, secrets redaction, and access control exist.
+Unit, database integration, live retrieval, and end-to-end Gemini generation were exercised successfully in GitHub Actions. **Still required before calling this production-ready:** a held-out real-world labeled dataset, negative-query abstention tests, threshold calibration on a separate development set, load testing, authenticated access, and data-redaction controls. The current benchmark is a meaningful functional check, not proof of reliability in production. Do not call the application production-ready before authentication, secrets redaction, and access control exist.
