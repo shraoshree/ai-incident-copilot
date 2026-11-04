@@ -71,7 +71,7 @@ Return a cautious likely cause, actionable investigation steps, and immediate ac
     for attempt in range(3):
         try:
             result = client.models.generate_content(
-                model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+                model=os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
                 contents=prompt,
                 config={
                     "response_mime_type": "application/json",
