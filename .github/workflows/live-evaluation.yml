@@ -1,0 +1,65 @@
+name: Live Gemini semantic retrieval evaluation
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/pgvector-rag-evaluation]
+    paths: ['.github/workflows/live-evaluation.yml']
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: incidents_live_test
+          POSTGRES_USER: copilot
+          POSTGRES_PASSWORD: test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U copilot -d incidents_live_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql://copilot:test_only@localhost:5432/incidents_live_test
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: gemini-3.6-flash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Require Gemini secret
+        shell: bash
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "Configure GEMINI_API_KEY in repository Actions secrets before running."
+            exit 1
+          fi
+      - name: Create schema and ingest synthetic knowledge
+        run: |
+          python retrieval.py init
+          python retrieval.py ingest
+      - name: Baseline keyword evaluation
+        run: python evaluation.py --method keyword
+      - name: Live semantic evaluation
+        run: python evaluation.py --method semantic
+      - name: End-to-end incident smoke test with Gemini
+        run: |
+          python - <<'PY'
+          from fastapi.testclient import TestClient
+          from main import app
+          client = TestClient(app)
+          payload = {"service": "payment-service", "alert": "API response time degraded", "severity": "critical", "description": "p99 latency increased to 2800 milliseconds; users experience slow checkout"}
+          response = client.post("/incident", json=payload)
+          assert response.status_code == 200, response.text
+          incident = response.json()["incident"]
+          assert incident["retrieval_matches"], "No relevant matches returned"
+          assert incident["analysis_source"] == "gemini", "Generation fell back; inspect workflow output"
+          assert incident["ai_analysis"]["investigation_steps"], "No investigation steps"
+          assert client.get("/incidents/" + incident["incident_id"]).status_code == 200
+          print("Live Gemini -> pgvector -> Gemini -> PostgreSQL API smoke test passed")
+          PY
