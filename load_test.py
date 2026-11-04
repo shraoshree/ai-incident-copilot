@@ -50,4 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("--concurrency", type=int, default=10)
     parser.add_argument("--timeout", type=float, default=5)
     args = parser.parse_args()
-    print(json.dumps(run(args.url, args.requests, args.concurrency, args.timeout), indent=2))
+    summary = run(args.url, args.requests, args.concurrency, args.timeout)
+    print(json.dumps(summary, indent=2))
+    if summary["successes"] != summary["requests"]:
+        raise SystemExit("Some health requests failed")
