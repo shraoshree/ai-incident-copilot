@@ -1,0 +1,62 @@
+[
+  {
+    "query": "meeting scheduler sends a reminder at the wrong local time after daylight saving changes",
+    "expected_title": null,
+    "category": "calendar"
+  },
+  {
+    "query": "online store calculates the wrong sales tax for one postal code",
+    "expected_title": null,
+    "category": "business-rule"
+  },
+  {
+    "query": "warehouse barcode scanner reads a damaged shipping label incorrectly",
+    "expected_title": null,
+    "category": "hardware"
+  },
+  {
+    "query": "customer support dashboard uses the wrong currency conversion rate",
+    "expected_title": null,
+    "category": "business-rule"
+  },
+  {
+    "query": "design team notices inconsistent button spacing in a mobile layout",
+    "expected_title": null,
+    "category": "ui"
+  },
+  {
+    "query": "a food delivery route optimizer chooses a longer route than necessary",
+    "expected_title": null,
+    "category": "optimization"
+  },
+  {
+    "query": "video subtitles appear in the wrong language for some viewers",
+    "expected_title": null,
+    "category": "product"
+  },
+  {
+    "query": "account deletion privacy request waits for manager approval",
+    "expected_title": null,
+    "category": "workflow"
+  },
+  {
+    "query": "machine learning recommendation ranking shows irrelevant music genres",
+    "expected_title": null,
+    "category": "ml-quality"
+  },
+  {
+    "query": "satellite sensor measurements drift after a hardware calibration",
+    "expected_title": null,
+    "category": "hardware"
+  },
+  {
+    "query": "invoice PDF export renders blank pages for right-to-left text",
+    "expected_title": null,
+    "category": "rendering"
+  },
+  {
+    "query": "a mobile app shows yesterday's weather forecast despite receiving today's data",
+    "expected_title": null,
+    "category": "stale-content"
+  }
+]
