@@ -59,6 +59,6 @@ jobs:
           assert incident["retrieval_matches"], "No relevant matches returned"
           assert incident["analysis_source"] == "gemini", "Generation fell back; inspect workflow output"
           assert incident["ai_analysis"]["investigation_steps"], "No investigation steps"
-          assert client.get(f"/incidents/{incident[\'incident_id\']}").status_code == 200
+          assert client.get("/incidents/" + incident["incident_id"]).status_code == 200
           print("Live Gemini -> pgvector -> Gemini -> PostgreSQL API smoke test passed")
           PY
