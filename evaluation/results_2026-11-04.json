@@ -1,7 +1,7 @@
 {
   "date": "2026-11-04",
   "source_workflow": "https://github.com/shraoshree/ai-incident-copilot/actions/runs/41859699106",
-  "notes": "Updated November 4 live synthetic benchmark after development-only margin midpoint calibration. The model and examples are synthetic, query-level split only, not independent validation. Threshold 0.65821 is now default in source, but deployed/local env can override.",
+  "notes": "Revised live synthetic benchmark after changing threshold selection to the dev-only margin midpoint. IMPORTANT: the choice to revise the rule was motivated by a false acceptance observed on the earlier test set (0.61235 run). The revised 6/6 no-answer result is optimistic and is not an unbiased held-out estimate. Query-level split only, same synthetic dataset, not independent validation. Current source default 0.65821; local env overrides it.",
   "semantic": {
     "method": "semantic",
     "benchmark": "synthetic, query-level dev/test split, not independent",
@@ -328,5 +328,14 @@
         "accepted": false
       }
     ]
-  }
+  },
+  "methodology_warning": "Test-set leakage through model-selection decisions: the new threshold formula uses only development scores, but the decision to adopt it was influenced by test-set feedback. Do not claim independent or fully held-out performance from the revised evaluation.",
+  "previous_run": {
+    "workflow": "https://github.com/shraoshree/ai-incident-copilot/actions/runs/41857655455",
+    "semantic_threshold": 0.61235,
+    "answerable_top1_correct": "10/10",
+    "no_answer_rejected": "5/6",
+    "no_answer_false_accept": "1/6"
+  },
+  "revised_run_interpretation": "6/6 no-answer cases were rejected after the rule change; result may be optimistic due to previously inspected test feedback."
 }
