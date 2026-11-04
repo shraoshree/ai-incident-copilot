@@ -1,4 +1,7 @@
-"""Run labeled retrieval benchmark; no fabricated quality claims."""
+"""Benchmark labeled semantic retrieval against original keyword baseline.
+
+Do not equate these retrieval metrics with LLM root-cause accuracy.
+"""
 import json
 import argparse
 from pathlib import Path
@@ -21,9 +24,9 @@ def evaluate(dataset: str, method: str):
             hits = semantic_search(case["query"], top_k=3)
         else:
             hits = keyword_search(case["query"])
-        ids = [hit["id"] for hit in hits]
-        predictions.append((ids, case["expected_id"]))
-        print(json.dumps({"query": case["query"], "predicted": ids, "expected": case["expected_id"]}))
+        titles = [hit["title"] for hit in hits]
+        predictions.append((titles, case["expected_title"]))
+        print(json.dumps({"query": case["query"], "predicted": titles, "expected": case["expected_title"]}))
     summary = metrics(predictions)
     print(json.dumps({"method": method, **summary}, indent=2))
     return summary
