@@ -14,11 +14,13 @@ from pydantic import BaseModel, Field
 
 from database import connection
 from retrieval import context_from_matches, retrieve
+from security import ApiSecurityMiddleware, redact_sensitive
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("incident-copilot")
-app = FastAPI(title="AI Incident Copilot", version="2.0.0")
+app = FastAPI(title="AI Incident Copilot", version="2.1.0")
+app.add_middleware(ApiSecurityMiddleware)
 
 class Incident(BaseModel):
     service: str = Field(min_length=1, max_length=120)
@@ -135,6 +137,8 @@ def health():
 
 @app.post("/incident")
 def receive_incident(incident: Incident):
+    # Redact before embedding, generation and database storage.
+    incident = Incident(**{name: redact_sensitive(getattr(incident, name)) for name in ("service", "alert", "severity", "description")})
     try:
         matches, retrieval_ms = retrieve(incident.service, incident.alert, incident.description)
         context = context_from_matches(matches)
