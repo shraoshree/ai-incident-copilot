@@ -1,0 +1,45 @@
+name: Live Gemini semantic retrieval evaluation
+on:
+  workflow_dispatch:
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: incidents_live_test
+          POSTGRES_USER: copilot
+          POSTGRES_PASSWORD: test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U copilot -d incidents_live_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql://copilot:test_only@localhost:5432/incidents_live_test
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Require Gemini secret
+        shell: bash
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "Configure GEMINI_API_KEY in repository Actions secrets before running."
+            exit 1
+          fi
+      - name: Create schema and ingest synthetic knowledge
+        run: |
+          python retrieval.py init
+          python retrieval.py ingest
+      - name: Baseline keyword evaluation
+        run: python evaluation.py --method keyword
+      - name: Live semantic evaluation
+        run: python evaluation.py --method semantic
