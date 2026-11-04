@@ -128,19 +128,49 @@ def report_metrics(rows: list[dict], threshold: float) -> dict:
     }
 
 
+def development_margin(dev_rows: list[dict]) -> dict | None:
+    """A margin exists only when every dev positive is top-1 correct and
+    scores strictly above every dev no-answer top-1.
+    Never inspect test data when selecting a threshold.
+    """
+    positives = [r for r in dev_rows if r["expected_title"]]
+    negatives = [r for r in dev_rows if not r["expected_title"]]
+    if not positives or not negatives:
+        return None
+    if any(not r["hits"] or r["hits"][0]["title"] != r["expected_title"] for r in positives):
+        return None
+    min_correct = min(r["top1_score"] for r in positives)
+    max_irrelevant = max(r["top1_score"] for r in negatives)
+    if max_irrelevant >= min_correct:
+        return None
+    return {
+        "max_dev_irrelevant": max_irrelevant,
+        "min_dev_correct": min_correct,
+        "gap": min_correct - max_irrelevant,
+        "midpoint": (min_correct + max_irrelevant) / 2,
+    }
+
+
 def choose_threshold(dev_rows: list[dict]) -> tuple[float, dict]:
-    # Threshold candidates come entirely from development scores.
+    # Use the center of an actual dev-only separation margin, if one exists.
+    margin = development_margin(dev_rows)
+    if margin is not None:
+        threshold = margin["midpoint"]
+        return threshold, report_metrics(dev_rows, threshold)
+    # Without full separation, use the dev threshold that maximizes balanced
+    # decision accuracy. Select the median best candidate to avoid favoring
+    # the lowest possible threshold at a tie.
     scores = sorted({r["top1_score"] for r in dev_rows} |
                     {h["score"] for r in dev_rows for h in r["hits"]})
     candidates = sorted(set([0.00000001, scores[-1] + 0.000001] +
                             [(a + b) / 2 for a, b in zip(scores, scores[1:])] +
                             scores))
-    # In a tie, use the lower threshold to preserve more positive recall.
-    best = max(candidates, key=lambda cut: (
-        report_metrics(dev_rows, cut)["balanced_decision_accuracy"], -cut
-    ))
+    scores_by_cutoff = [(c, report_metrics(dev_rows, c)) for c in candidates]
+    best_score = max(m["balanced_decision_accuracy"] for _, m in scores_by_cutoff)
+    best_candidates = [c for c, m in scores_by_cutoff
+                       if m["balanced_decision_accuracy"] == best_score]
+    best = best_candidates[len(best_candidates) // 2]
     return best, report_metrics(dev_rows, best)
-
 
 def distribution(values: list[float]) -> dict:
     if not values:
@@ -163,7 +193,7 @@ def summarize(rows: list[dict], method: str) -> dict:
         "method": method,
         "benchmark": "synthetic, query-level dev/test split, not independent",
         "threshold": round(threshold, 8),
-        "threshold_selection": "max dev balanced decision accuracy; tie => lower threshold",
+        "threshold_selection": ("midpoint of full development separation margin"\n                                if development_margin(dev) is not None else\n                                "max development balanced decision accuracy; median tie"),\n        "dev_margin": development_margin(dev),
         "dev": dev_metrics,
         "test": report_metrics(test, threshold),
         "test_scores": {
