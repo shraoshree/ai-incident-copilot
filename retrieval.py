@@ -14,7 +14,7 @@ from database import connection
 
 EMBED_MODEL = os.getenv("EMBED_MODEL", "gemini-embedding-001")
 VECTOR_DIM = 768
-DEFAULT_THRESHOLD = float(os.getenv("MIN_SIMILARITY", "0.50"))
+DEFAULT_THRESHOLD = 0.50  # fallback when MIN_SIMILARITY is unset
 
 def embed(text: str, task_type: str) -> list[float]:
     api_key = os.getenv("GEMINI_API_KEY")
@@ -70,7 +70,7 @@ def incident_query(service: str, alert: str, description: str) -> str:
 def semantic_search(query: str, top_k: int = 3, threshold: float | None = None) -> list[dict]:
     if not 1 <= top_k <= 20:
         raise ValueError("top_k must be between 1 and 20")
-    cutoff = DEFAULT_THRESHOLD if threshold is None else threshold
+    cutoff = float(os.getenv("MIN_SIMILARITY", str(DEFAULT_THRESHOLD))) if threshold is None else threshold
     vector = embed(query, "RETRIEVAL_QUERY")
     with connection() as conn:
         register_vector(conn)
