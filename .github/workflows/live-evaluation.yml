@@ -2,7 +2,7 @@ name: Live Gemini semantic retrieval evaluation
 on:
   workflow_dispatch:
   push:
-    branches: [feature/evaluation-credibility]
+    branches: [feature/threshold-calibration-and-readme-fixes]
     paths: ['.github/workflows/live-evaluation.yml']
 jobs:
   evaluate:
