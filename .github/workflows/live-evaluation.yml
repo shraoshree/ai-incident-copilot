@@ -1,6 +1,9 @@
 name: Live Gemini semantic retrieval evaluation
 on:
   workflow_dispatch:
+  push:
+    branches: [feature/pgvector-rag-evaluation]
+    paths: ['.github/workflows/live-evaluation.yml']
 jobs:
   evaluate:
     runs-on: ubuntu-latest
