@@ -1,418 +1,110 @@
-# AI Incident Analysis Copilot
+# AI Incident Copilot — Vector RAG Prototype
 
-A backend service that helps engineers investigate production incidents by combining historical incident knowledge with LLM-generated troubleshooting guidance.
+Backend service for incident triage using **FastAPI, PostgreSQL + pgvector, Gemini embeddings, and Gemini structured generation**. It retrieves relevant historical incidents, presents them to the model as untrusted reference context, validates output, and stores a lifecycle record in PostgreSQL.
 
-I built this project around a problem I encountered in production support: an alert tells an engineer that something is wrong, but identifying what to investigate often requires correlating the alert with previous incidents, runbooks, logs, metrics, and recent changes.
+> **Implementation status:** This branch contains the code and example dataset. Live embeddings, end-to-end integration, and retrieval quality have not been independently verified without a configured Gemini key and a running pgvector database. No benchmark accuracy is claimed.
 
-This prototype explores whether historical incident context can be retrieved automatically and supplied to an LLM to produce a more useful starting point for investigation.
-
-## How It Works
+## Architecture
 
 ```text
-Incoming Incident
-       |
-       v
-   FastAPI API
-       |
-       v
-Pydantic Validation
-       |
-       v
-Historical Knowledge Retrieval
-       |
-       | retrieved incident context
-       v
- Prompt Construction
-       |
-       | current incident + historical context
-       v
- Gemini LLM
-       |
-       v
-Structured Analysis
-       |
-       v
-Incident Storage
+POST /incident
+  -> Pydantic request validation
+  -> Gemini embedding (RETRIEVAL_QUERY)
+  -> pgvector cosine similarity, top 3 + threshold
+  -> historical context -> Gemini structured output
+  -> retries/fallback on LLM failure
+  -> PostgreSQL incident record + retrieved match metadata
+  -> JSON response
 ```
 
-The LLM is used as an investigation assistant, not as the source of truth. Historical incident information is retrieved first and included as context in the model request.
+Document ingestion: `knowledge/incidents.txt` -> Gemini embeddings (`RETRIEVAL_DOCUMENT`) -> `knowledge` table. The same model and dimension must be used for queries and documents. Historical records are illustrative synthetic engineering incidents, **not actual company records**.
 
-## Retrieval
+## Quick start
 
-Historical incident knowledge currently lives in:
-
-```text
-knowledge/incidents.txt
-```
-
-The file contains incident records separated into blocks. Each block contains information such as:
-
-```text
-Incident: Payment Service High Latency
-Symptoms: p99 API latency above 2000ms.
-Possible cause: Database connection pool exhaustion.
-Recommended checks:
-1. Check active database connections.
-2. Check slow database queries.
-3. Check application CPU and memory.
-4. Check recent deployments.
-```
-
-For an incoming incident, the service combines:
-
-```text
-service + alert + description
-```
-
-and performs simple keyword matching against the historical incident blocks.
-
-Words shorter than five characters are ignored to reduce matches on common words. The first historical block containing a matching keyword is returned as context.
-
-For example:
-
-```text
-Incoming alert:
-High API latency
-
-Description:
-p99 latency increased to 2800ms
-```
-
-can retrieve:
-
-```text
-Incident: Payment Service High Latency
-Possible cause: Database connection pool exhaustion
-```
-
-This retrieval mechanism is intentionally simple. It demonstrates the retrieval → context → generation flow without introducing a vector database yet.
-
-Its main limitation is semantic matching. For example:
-
-```text
-"database connections exhausted"
-```
-
-and:
-
-```text
-"DB pool saturation"
-```
-
-may describe the same failure but share few useful keywords.
-
-A future version would use embeddings with PostgreSQL/pgvector so incidents can be retrieved based on semantic similarity rather than exact word overlap.
-
-## Prompt and Grounding
-
-The model does not receive only the incoming alert.
-
-The prompt contains two sections:
-
-```text
-CURRENT INCIDENT
-- service
-- alert
-- severity
-- description
-
-RELEVANT HISTORICAL KNOWLEDGE
-- retrieved incident/runbook context
-```
-
-The model is then asked to produce:
-
-```text
-1. Likely cause
-2. Investigation steps
-3. Immediate action
-```
-
-This keeps the current incident separate from retrieved historical information and gives the model concrete operational context before it generates troubleshooting guidance.
-
-The current implementation uses one retrieved historical incident. Expanding retrieval to ranked top-k results is part of the next retrieval iteration.
-
-## Structured LLM Output
-
-The project currently uses:
-
-```text
-gemini-3.6-flash
-```
-
-Instead of asking Gemini for arbitrary text and manually parsing JSON, the application provides a Pydantic response schema:
-
-```python
-class IncidentAnalysis(BaseModel):
-    likely_cause: str
-    investigation_steps: list[str]
-    immediate_action: str
-```
-
-The Gemini request specifies:
-
-```python
-response_mime_type = "application/json"
-response_schema = IncidentAnalysis
-```
-
-The parsed response is therefore validated against the expected structure before being stored.
-
-If Gemini returns a response that cannot be parsed into the expected structure, the application returns predefined investigation guidance rather than allowing malformed model output into the normal response path.
-
-## External API Failure Handling
-
-Gemini is an external dependency, so an AI provider failure should not prevent the incident-management API from continuing to operate.
-
-The application retries Gemini server-side failures up to three times.
-
-```text
-Gemini request
-     |
-     v
- attempt 1
-     |
-   failure
-     |
-     v
- wait 3 seconds
-     |
-     v
- attempt 2
-     |
-   failure
-     |
-     v
- wait 3 seconds
-     |
-     v
- attempt 3
-     |
-   failure
-     |
-     v
-fallback investigation guidance
-```
-
-The current implementation retries `google.genai.errors.ServerError`, which covers temporary server-side failures such as the `503 Service Unavailable` responses encountered during development.
-
-Retries currently use a fixed three-second delay. Exponential backoff and jitter would be preferable at larger scale.
-
-Most importantly, an unavailable LLM does not cause the incident API itself to fail. The incident can still be recorded and investigated using retrieved historical knowledge and fallback guidance.
-
-## End-to-End Example
-
-### Request
+Requires Docker and a Gemini API key with access to the embedding and generation models. No keys should be committed.
 
 ```bash
-curl -X POST "http://127.0.0.1:8001/incident" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "service": "payment-service",
-    "alert": "High API latency",
-    "severity": "critical",
-    "description": "p99 latency increased to 2800ms"
-  }'
+cp .env.example .env
+# edit .env, set GEMINI_API_KEY
+docker compose up -d db
+# local Python virtual environment, then:
+pip install -r requirements.txt
+python retrieval.py init
+python retrieval.py ingest
+uvicorn main:app --reload
 ```
 
-### Retrieved Historical Context
+Visit `http://localhost:8000/docs`. Or run the API through Compose:
 
-For this incident, the current keyword retriever selects the historical record:
-
-```text
-Incident: Payment Service High Latency
-Symptoms: p99 API latency above 2000ms.
-Possible cause: Database connection pool exhaustion.
-Recommended checks:
-1. Check active database connections.
-2. Check slow database queries.
-3. Check application CPU and memory.
-4. Check recent deployments.
+```bash
+docker compose up --build -d
+docker compose exec api python retrieval.py init
+docker compose exec api python retrieval.py ingest
 ```
 
-### Stored Incident
+Note: if both local Python and the API Compose service are running, use appropriate hostnames: local `DATABASE_URL` points to `localhost`, Compose API overrides it to `db`. `docker compose down -v` deletes database data.
 
-A successful request produces a record with this shape:
+### Example
 
-```json
-{
-  "message": "Incident analyzed and saved",
-  "incident": {
-    "incident_id": "INC-23b667ec",
-    "timestamp": "2026-09-21T17:30:00+00:00",
-    "service": "payment-service",
-    "alert": "High API latency",
-    "severity": "critical",
-    "description": "p99 latency increased to 2800ms",
-    "status": "open",
-    "relevant_knowledge": "Incident: Payment Service High Latency\nSymptoms: p99 API latency above 2000ms.\nPossible cause: Database connection pool exhaustion...",
-    "ai_analysis": {
-      "likely_cause": "Database connection pool exhaustion",
-      "investigation_steps": [
-        "Check active database connections",
-        "Inspect slow database queries",
-        "Check application CPU and memory",
-        "Review recent deployments"
-      ],
-      "immediate_action": "Check database connection saturation and recent application changes."
-    }
-  }
-}
+```bash
+curl -X POST http://localhost:8000/incident \
+  -H 'Content-Type: application/json' \
+  -d '{"service":"payments","alert":"High API latency","severity":"critical","description":"p99 response time rose above 2800ms"}'
 ```
 
-The incident ID above is an example; IDs are generated dynamically for new incidents.
+Response includes `incident_id`, `analysis_source` (Gemini or fallback), `retrieval_matches` with scores, and `retrieval_ms`. This is a measured wall-time for embedding + retrieval, **not the total API latency**.
 
-## Incident Lifecycle
+## APIs
 
-Every new incident receives a unique ID and begins with:
-
-```text
-status = open
-```
-
-The API currently supports:
-
-```text
-open
-investigating
-resolved
-```
-
-Status can be changed through:
-
-```text
-PATCH /incidents/{incident_id}/status
-```
-
-The current prototype validates that the requested status belongs to this allowed set.
-
-It does not yet enforce transition rules. For example, a resolved incident could currently be changed back to open. A production version would define and validate allowed state transitions.
-
-## API
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `POST` | `/incident` | Retrieve context, analyze and store an incident |
-| `GET` | `/incidents` | List/filter incidents |
-| `GET` | `/incidents/{incident_id}` | Retrieve one incident |
-| `PATCH` | `/incidents/{incident_id}/status` | Update incident lifecycle status |
-| `GET` | `/stats` | Incident statistics |
-| `GET` | `/health` | Service health check |
-| `GET` | `/knowledge` | Inspect the prototype knowledge base |
-
-FastAPI automatically exposes interactive API documentation through Swagger.
-
-## Reliability and Observability
-
-The application logs important stages of incident processing:
-
-```text
-Incident received
-Historical knowledge retrieved
-AI analysis requested
-AI request retry
-AI provider unavailable
-Incident saved
-Incident status updated
-```
-
-During testing, Gemini returned temporary `503 Service Unavailable` responses. These were useful for validating that retries and graceful degradation work as expected.
-
-Incident ingestion and persistence continue even when AI generation is temporarily unavailable.
+| Endpoint | Description |
+| --- | --- |
+| `GET /` | Service identity |
+| `GET /health` | Database-backed health |
+| `POST /incident` | Retrieve, analyze and persist incident |
+| `GET /incidents?status=open&limit=100` | Paginated-size capped incident list (limit, not cursor pagination) |
+| `GET /incidents/{id}` | Fetch incident |
+| `PATCH /incidents/{id}/status` | Enforce open → investigating/resolved → resolved |
+| `GET /stats` | Aggregate status and critical counts |
+| `GET /knowledge` | List knowledge (demo-only endpoint) |
 
 ## Evaluation
 
-The current version does not yet have a formal LLM evaluation suite.
+The labeled demo set `evaluation/cases.json` contains 21 paraphrased queries with an expected historical incident title. The matching knowledge corpus has 21 synthetic cases. The tests measure retrieval selection, not root-cause correctness.
 
-Before treating the generated root-cause suggestions as reliable, the next step is to build a small labeled incident dataset containing:
-
-```text
-incident
-expected failure category
-expected investigation area
-historical context
+```bash
+python evaluation.py --method keyword
+python evaluation.py --method semantic
+pytest -q
 ```
 
-The system can then measure whether retrieval selects the correct historical context and whether the generated analysis identifies the expected investigation area.
+Metrics: Hit@1, Hit@3, MRR@3; the keyword baseline returns only the **first** match, mirroring the original implementation. These comparisons are for development only: tuning `MIN_SIMILARITY` on the same 21 examples would contaminate evaluation. Create an independent, held-out test set before claiming an improvement. Negative queries and abstention accuracy also need dedicated evaluation.
 
-This is intentionally listed as unfinished rather than claiming accuracy based on a small number of manual examples.
+## Reliability and security considerations
 
-## Current Limitations
+- Gemini generation has a 15-second request timeout (configured through the SDK), up to 3 server-error attempts, and a conservative fallback. No fixed guarantee of all network failure recovery.
+- Missing or failed semantic retrieval yields explicit unavailable context; it does **not** falsely claim a matching past incident.
+- If database persistence fails, `POST /incident` returns HTTP 503 instead of falsely claiming the incident was saved.
+- PostgreSQL transactions protect status updates with `FOR UPDATE`, avoiding the JSON file's lost-update risk.
+- The knowledge corpus and incoming incident fields are **untrusted data**, not authoritative instructions for the model. Users must verify suggested actions with live evidence.
+- The demo Compose database password is **development-only**. Never expose it or the demo API directly to the public internet. Authentication, access controls, redaction of secrets in incident descriptions, rate limiting, and incident-level audit logs are required before real production use.
+- `/knowledge` exposes sample historical context and must be restricted or removed for sensitive deployments.
+- An HNSW index is intentionally omitted at this tiny corpus size. Add/benchmark an index when scale justifies it.
 
-### Retrieval
-
-Keyword matching does not capture semantic similarity and returns only the first matching historical incident.
-
-### Storage
-
-Incidents are stored in a JSON file.
-
-This is appropriate for a local prototype but is not safe for concurrent production writes and does not provide transactions, indexing, or scalable querying.
-
-### AI dependency
-
-The application depends on an external LLM provider. Retry and fallback behavior reduce the impact of temporary failures, but the AI analysis itself is unavailable during an extended provider outage.
-
-### Fallback provenance
-
-The current response structure does not explicitly record whether `ai_analysis` came from Gemini or from fallback guidance.
-
-This is an important limitation because downstream users should be able to distinguish model-generated analysis from predefined fallback advice.
-
-Adding an `analysis_source` field such as:
+## Project layout
 
 ```text
-gemini
-fallback
+main.py                 FastAPI, validated LLM analysis, lifecycle endpoints
+database.py             pgvector and incident PostgreSQL schema
+retrieval.py            embedding, ingestion, vector search, keyword baseline
+evaluation.py           labeled retrieval benchmark
+knowledge/incidents.txt 21 synthetic incident records
+evaluation/cases.json   21 illustrative paraphrases and labels
+test_main.py            mock-based unit/API tests
+Dockerfile              application image
+docker-compose.yml      local pgvector database + application
+.github/workflows/      unit-test CI
 ```
 
-is planned for the next iteration.
+### Next validation
 
-## Next Steps
-
-The immediate priorities are deliberately small:
-
-**1. Automated tests and evaluation**
-
-Add API tests, retrieval tests, failure-path tests, and a labeled incident evaluation set.
-
-**2. Semantic retrieval with pgvector**
-
-Replace keyword matching with embeddings so operationally similar incidents can match even when they use different terminology.
-
-For example:
-
-```text
-DB pool exhausted
-```
-
-should be able to match:
-
-```text
-database connection saturation
-```
-
-without depending on shared keywords.
-
-**3. Alertmanager webhook ingestion**
-
-Replace manual incident submission with alerts received from a monitoring system, allowing the Copilot to analyze real alert payloads automatically.
-
-Additional infrastructure such as Kafka, Redis, Slack integration, and Kubernetes would only be introduced when the workload or architecture provides a concrete reason for them.
-
-## Project Structure
-
-```text
-ai-incident-copilot/
-│
-├── data/
-│   └── incidents.json
-├── knowledge/
-│   └── incidents.txt
-├── main.py
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
-
-Secrets such as the Gemini API key are loaded from `.env`. The `.env` file should never be committed to the repository.
+Execute quick start with live API credentials and PostgreSQL, inspect real similarities, tune the threshold on a development split, verify failures and network behavior, and add negative-case benchmarks. Update this README with measured results only after those runs.
