@@ -7,10 +7,11 @@ import uuid
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Security
 from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel, Field
+from fastapi.security import APIKeyHeader
 
 from database import connection
 from retrieval import context_from_matches, retrieve
@@ -21,6 +22,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger("incident-copilot")
 app = FastAPI(title="AI Incident Copilot", version="2.1.0")
 app.add_middleware(ApiSecurityMiddleware)
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False, description="Local demo API key, set in COPILOT_API_KEY")
 
 class Incident(BaseModel):
     service: str = Field(min_length=1, max_length=120)
@@ -135,7 +137,7 @@ def health():
     except Exception:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-@app.post("/incident")
+@app.post("/incident", dependencies=[Security(api_key_header)])
 def receive_incident(incident: Incident):
     # Redact before embedding, generation and database storage.
     incident = Incident(**{name: redact_sensitive(getattr(incident, name)) for name in ("service", "alert", "severity", "description")})
@@ -154,7 +156,7 @@ def receive_incident(incident: Incident):
         raise HTTPException(status_code=503, detail="Incident could not be saved")
     return {"message": "Incident analyzed and saved", "incident": stored}
 
-@app.get("/incidents")
+@app.get("/incidents", dependencies=[Security(api_key_header)])
 def list_incidents(status: str | None = None, limit: int = 100):
     if not 1 <= limit <= 500:
         raise HTTPException(status_code=422, detail="limit must be 1..500")
@@ -167,7 +169,7 @@ def list_incidents(status: str | None = None, limit: int = 100):
         ).fetchall()
     return {"count": len(rows), "incidents": [_record(r) for r in rows]}
 
-@app.get("/incidents/{incident_id}")
+@app.get("/incidents/{incident_id}", dependencies=[Security(api_key_header)])
 def get_incident(incident_id: str):
     with connection() as conn:
         row = conn.execute("SELECT * FROM incidents WHERE incident_id=%s", (incident_id,)).fetchone()
@@ -175,7 +177,7 @@ def get_incident(incident_id: str):
         raise HTTPException(status_code=404, detail="Incident not found")
     return {"incident": _record(row)}
 
-@app.patch("/incidents/{incident_id}/status")
+@app.patch("/incidents/{incident_id}/status", dependencies=[Security(api_key_header)])
 def update_status(incident_id: str, change: StatusUpdate):
     if change.status not in ("open", "investigating", "resolved"):
         raise HTTPException(status_code=400, detail="Invalid status")
@@ -190,7 +192,7 @@ def update_status(incident_id: str, change: StatusUpdate):
                                (change.status, incident_id)).fetchone()
     return {"message": "Incident status updated", "incident": _record(updated)}
 
-@app.get("/stats")
+@app.get("/stats", dependencies=[Security(api_key_header)])
 def stats():
     with connection() as conn:
         rows = conn.execute("SELECT status, severity, count(*) AS n FROM incidents GROUP BY status, severity").fetchall()
@@ -203,7 +205,7 @@ def stats():
             result["critical"] += n
     return result
 
-@app.get("/knowledge")
+@app.get("/knowledge", dependencies=[Security(api_key_header)])
 def knowledge():
     with connection() as conn:
         rows = conn.execute("SELECT id, title, content FROM knowledge ORDER BY title").fetchall()
