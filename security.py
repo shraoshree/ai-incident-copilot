@@ -24,8 +24,8 @@ _IPV4 = re.compile(r"(?<!\d)(?:\d{1,3}\.){3}\d{1,3}(?!\d)")
 
 def redact_sensitive(value: str) -> str:
     """Remove common secrets/identifiers before embedding, AI calls or persistence."""
-    value = _SENSITIVE_FIELD.sub(lambda m: f"{m.group(1)}=[REDACTED]", value)
     value = _BEARER.sub("Bearer [REDACTED]", value)
+    value = _SENSITIVE_FIELD.sub(lambda m: f"{m.group(1)}=[REDACTED]", value)
     value = _EMAIL.sub("[REDACTED_EMAIL]", value)
     value = _IPV4.sub("[REDACTED_IP]", value)
     return value
