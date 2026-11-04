@@ -77,7 +77,7 @@ python evaluation.py --method semantic
 pytest -q
 ```
 
-Metrics: Hit@1, Hit@3, MRR@3; the keyword baseline returns only the **first** match, mirroring the original implementation. These comparisons are for development only: tuning `MIN_SIMILARITY` on the same 21 examples would contaminate evaluation. Create an independent, held-out test set before claiming an improvement. Negative queries and abstention accuracy also need dedicated evaluation.
+**Verified CI baseline (21 labeled paraphrase cases):** keyword Hit@1 = **0.4286**, Hit@3 = **0.4286**, MRR@3 = **0.4286** (9/21 first-match hits). These are measurements of this synthetic benchmark, not production performance. The semantic result is **not measured yet**.\n\n**CI verification:** 12 unit + PostgreSQL/pgvector integration tests passed on GitHub Actions (Nov 4, 2026), including real vector ranking and incident lifecycle tests using deterministic embeddings.\n\n**Live semantic benchmark:** After configuring the `GEMINI_API_KEY` repository Actions secret, run `.github/workflows/live-evaluation.yml` from GitHub Actions once the workflow exists on the default branch. It initializes pgvector, ingests the example corpus, and executes keyword and semantic benchmark commands. Run it only if comfortable with Gemini API usage and billing. Until then, run the listed CLI commands locally with `.env` configured. Never paste API keys into issues, commits or chat.\n\nMetrics: Hit@1, Hit@3, MRR@3; the keyword baseline returns only the **first** match, mirroring the original implementation. These comparisons are for development only: tuning `MIN_SIMILARITY` on the same 21 examples would contaminate evaluation. Create an independent, held-out test set before claiming an improvement. Negative queries and abstention accuracy also need dedicated evaluation.
 
 ## Reliability and security considerations
 
@@ -107,4 +107,4 @@ docker-compose.yml      local pgvector database + application
 
 ### Next validation
 
-Execute quick start with live API credentials and PostgreSQL, inspect real similarities, tune the threshold on a development split, verify failures and network behavior, and add negative-case benchmarks. Update this README with measured results only after those runs.
+Unit and database integration paths were exercised in GitHub Actions. **Still required for full end-to-end validation:** run with a real Gemini API key, inspect actual semantic retrieval scores, tune the threshold only on a development split, test provider failures, and add a held-out negative-query abstention benchmark. Do not call the application production-ready before authentication, secrets redaction, and access control exist.
