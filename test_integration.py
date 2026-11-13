@@ -97,3 +97,61 @@ def test_api_end_to_end_with_real_db_and_stub_embeddings(db, monkeypatch):
     assert client.patch(f"/incidents/{incident_id}/status",
                         json={"status": "open"}).status_code == 400
     assert client.get("/stats").json()["resolved"] == 1
+
+
+@pytest.mark.parametrize("kind", ["structured", "legacy", "no_match"])
+def test_api_and_evaluation_retrieval_parity(db, monkeypatch, tmp_path, capsys, kind):
+    """Exercise API and both evaluators through real pgvector ranking.
+
+    Only the external embedding/generation services are replaced. The embedding
+    stub verifies the actual text received, including redaction and all fields.
+    """
+    import json
+    from evaluation import evaluate
+    from evaluation_robust import apply_threshold, score_rows
+
+    populate()
+    monkeypatch.delenv("MIN_SIMILARITY", raising=False)
+    if kind == "legacy":
+        payload = {"service": "unspecified", "alert": "Incident reported",
+                   "severity": "unspecified", "description": "DB pool password=private-value"}
+        case = {"query": payload["description"]}
+        expected_query = "Service: unspecified\nAlert: Incident reported\nDescription: DB pool password=[REDACTED]"
+    else:
+        payload = {"service": "payments owner@example.com",
+                   "alert": "DB pool token=private-value", "severity": "critical",
+                   "description": "Connections saturated at 10.2.3.4"}
+        case = {"incident": payload}
+        expected_query = ("Service: payments [REDACTED_EMAIL]\n"
+                          "Alert: DB pool token=[REDACTED]\n"
+                          "Description: Connections saturated at [REDACTED_IP]")
+    received_queries = []
+
+    def embedding(query, task):
+        received_queries.append(query)
+        assert query == expected_query
+        assert task == "RETRIEVAL_QUERY"
+        return unit_vector(3 if kind == "no_match" else 0)
+
+    monkeypatch.setattr(retrieval, "embed", embedding)
+    monkeypatch.setattr(main, "analyze_incident", lambda incident, context: (
+        main.fallback("Test generation stub"), "fallback"
+    ))
+    client = TestClient(main.app, headers={"X-API-Key": "test-only-copilot-secret"})
+    response = client.post("/incident", json=payload)
+    assert response.status_code == 200, response.text
+    api_hits = response.json()["incident"]["retrieval_matches"]
+    expected = [] if kind == "no_match" else [{"title": "Database Saturation", "score": 1.0}]
+    assert [{"title": h["title"], "score": h["similarity"]} for h in api_hits] == expected
+
+    case.update(split="test", expected_title="Database Saturation")
+    rows = score_rows([case], "semantic", [])
+    assert apply_threshold(rows[0], retrieval.DEFAULT_THRESHOLD) == expected
+    assert rows[0]["query"] == expected_query
+
+    dataset = tmp_path / "cases.json"
+    dataset.write_text(json.dumps([case]))
+    evaluate(str(dataset), "semantic")
+    printed = capsys.readouterr().out.splitlines()
+    assert json.loads(printed[0])["predicted"] == [h["title"] for h in api_hits]
+    assert received_queries == [expected_query] * 3

@@ -10,12 +10,13 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Security
 from google import genai
 from google.genai import errors, types
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from fastapi.security import APIKeyHeader
 
 from database import connection
 from retrieval import context_from_matches, retrieve
-from security import ApiSecurityMiddleware, redact_sensitive
+from security import ApiSecurityMiddleware
+from incident_input import Incident, prepare_incident
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -23,12 +24,6 @@ logger = logging.getLogger("incident-copilot")
 app = FastAPI(title="AI Incident Copilot", version="2.1.0")
 app.add_middleware(ApiSecurityMiddleware)
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False, description="Local demo API key, set in COPILOT_API_KEY")
-
-class Incident(BaseModel):
-    service: str = Field(min_length=1, max_length=120)
-    alert: str = Field(min_length=1, max_length=300)
-    severity: str = Field(min_length=1, max_length=40)
-    description: str = Field(min_length=1, max_length=10000)
 
 class IncidentAnalysis(BaseModel):
     likely_cause: str
@@ -140,7 +135,7 @@ def health():
 @app.post("/incident", dependencies=[Security(api_key_header)])
 def receive_incident(incident: Incident):
     # Redact before embedding, generation and database storage.
-    incident = Incident(**{name: redact_sensitive(getattr(incident, name)) for name in ("service", "alert", "severity", "description")})
+    incident = prepare_incident(incident)
     try:
         matches, retrieval_ms = retrieve(incident.service, incident.alert, incident.description)
         context = context_from_matches(matches)

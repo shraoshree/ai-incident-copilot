@@ -13,6 +13,7 @@ import re
 import statistics
 
 from retrieval import parse_knowledge, semantic_search
+from evaluation import case_query
 
 TOKENS = re.compile(r"[a-z0-9]+")
 
@@ -75,17 +76,18 @@ def score_rows(cases: list[dict], method: str, records: list[dict]) -> list[dict
     bm25 = BM25(records) if method == "bm25" else None
     rows = []
     for case in cases:
+        query = case_query(case)
         if method == "bm25":
-            hits = bm25.search(case["query"], top_k=3)
+            hits = bm25.search(query, top_k=3)
         else:
             # Disabling the filter only for measurement makes the score
             # distribution visible even if the application would abstain.
             hits = [
                 {"title": hit["title"], "score": float(hit["similarity"])}
-                for hit in semantic_search(case["query"], top_k=3, threshold=-1.0)
+                for hit in semantic_search(query, top_k=3, threshold=-1.0)
             ]
         rows.append({
-            "query": case["query"], "split": case["split"],
+            "query": query, "split": case["split"],
             "expected_title": case["expected_title"],
             "hits": hits, "top1_score": hits[0]["score"] if hits else 0.0,
             "correct_score": next(
