@@ -1,0 +1,19 @@
+{
+  "commit": "b4a3184a73a24e0a058ea961529b648b145842da",
+  "reference_tag": "reference/before-evaluation-api-input-parity",
+  "input_behavior": "Evaluation searches raw query strings; API validates, redacts and formats service/alert/description.",
+  "default_semantic_threshold": 0.65821,
+  "live_semantic_run": false,
+  "live_semantic_reason": "No Gemini credential configured; archived November 4 results preserved unchanged.",
+  "file_hashes": {
+    "main.py": "7e358de888028c50cd756d2a4b248c86318be36be5958243af0587b6ea3f5605",
+    "retrieval.py": "23ee722710b0e19063eeea3d9380b99f469dad2c0de4a98378a11cc47adcc4dc",
+    "security.py": "e094f83e4c985f3d03e01708ed4deae24094467feef514953d005f2f6bfbe639",
+    "evaluation.py": "cb574f3a1c793fa1a00df5668abb6ffb8cfc28ea547308a81a6a61a5be0a28a4",
+    "evaluation_robust.py": "e38ed3f76b7403f72006879c1e9046639eaee976a2c037559cfd770fa139ce8c",
+    "knowledge/incidents.txt": "41ead273e0ea05990d2d17368dfecb4548468202b40cdeb0b9eaa38b30eac72e",
+    "evaluation/cases.json": "466b6a9d311e081be2476a09c5f794b33e126234835b8d4b188d23cc5f2371f9",
+    "evaluation/negative_cases.json": "c82dde7ff4ce6ff09415b502f4914f48fd593c8f8f9fc038956c766e4a6d948a",
+    "evaluation/results_2026-11-04.json": "25bfa17fc5b223530c002636915420cd623fc003705b509b5e0435ece57199aa"
+  }
+}

@@ -1,0 +1,28 @@
+{"query": "payment API response time climbed above two seconds", "predicted": ["Payment Service High Latency"], "expected": "Payment Service High Latency"}
+{"query": "backend responds with frequent 500 errors", "predicted": ["High API Error Rate"], "expected": "High API Error Rate"}
+{"query": "application processor utilization is pinned near one hundred percent", "predicted": ["High API Error Rate"], "expected": "High CPU Usage"}
+{"query": "Kafka consumers cannot keep up with incoming messages", "predicted": ["Kafka Consumer Lag"], "expected": "Kafka Consumer Lag"}
+{"query": "transactions block one another in a circular wait", "predicted": ["Database Deadlocks"], "expected": "Database Deadlocks"}
+{"query": "Redis cached value expires triggering simultaneous database reads", "predicted": ["Payment Service High Latency"], "expected": "Redis Cache Stampede"}
+{"query": "server cannot write logs because filesystem is full", "predicted": ["Disk Space Exhaustion"], "expected": "Disk Space Exhaustion"}
+{"query": "container keeps growing memory until it is killed", "predicted": ["Memory Leak in Backend"], "expected": "Memory Leak in Backend"}
+{"query": "Kubernetes workload restarts repeatedly and cannot stabilize", "predicted": ["Memory Leak in Backend"], "expected": "Kubernetes CrashLoopBackOff"}
+{"query": "HTTPS clients reject an outdated server certificate", "predicted": ["TLS Certificate Expiry"], "expected": "TLS Certificate Expiry"}
+{"query": "connection pool slots are all used and new DB requests wait", "predicted": ["Payment Service High Latency"], "expected": "Database Connection Pool Saturation"}
+{"query": "billing event gets handled multiple times after retries", "predicted": ["Memory Leak in Backend"], "expected": "Message Queue Duplicate Processing"}
+{"query": "hostname resolution returns intermittent SERVFAIL", "predicted": ["DNS Resolution Failure"], "expected": "DNS Resolution Failure"}
+{"query": "query execution becomes slow due to full table scan", "predicted": ["Slow SQL Query Plan"], "expected": "Slow SQL Query Plan"}
+{"query": "third party endpoint is returning too many requests responses", "predicted": ["Payment Service High Latency"], "expected": "Rate Limit Exceeded"}
+{"query": "upstream calls retry because packets are being dropped", "predicted": ["Message Queue Duplicate Processing"], "expected": "Network Packet Loss"}
+{"query": "error rate increased directly after production rollout", "predicted": ["High API Error Rate"], "expected": "Deployment Regression"}
+{"query": "service gets unauthorized errors due to expired bearer token", "predicted": ["Payment Service High Latency"], "expected": "Expired Access Token"}
+{"query": "cloud object-store API slows under throttling", "predicted": ["Database Connection Pool Saturation"], "expected": "Object Storage Throttling"}
+{"query": "executor workers all blocked and tasks queue up", "predicted": ["Message Queue Duplicate Processing"], "expected": "Worker Thread Pool Exhaustion"}
+{"query": "read-only database replica contains stale records as WAL replay is behind", "predicted": ["Payment Service High Latency"], "expected": "PostgreSQL Replication Lag"}
+{
+  "method": "keyword",
+  "cases": 21,
+  "hit_at_1": 0.4286,
+  "hit_at_3": 0.4286,
+  "mrr_at_3": 0.4286
+}
