@@ -57,6 +57,17 @@ knowledge/incidents.txt -> Gemini document embeddings -> pgvector
 
 ## Evaluation
 
+Current semantic evaluation defaults to **production mode**: it uses the same
+`MIN_SIMILARITY` environment override (or default) and full-precision cutoff
+logic as the API. Reports include the effective threshold and accepted matches.
+Use `python evaluation_robust.py --method semantic --mode calibration` only for
+separate development-threshold experiments. BM25 remains a calibration baseline;
+its scores are not comparable to cosine similarity. Run API and evaluation with
+the same exported environment, embedding model, and ingested database.
+See [input parity review](evaluation/INPUT_PARITY_REVIEW.md) for validation and limits.
+The measurements below are historical; they have not been rerun with live Gemini
+for the revised evaluator.
+
 The first retrieval benchmark used 21 synthetic historical incidents and 21 labeled paraphrases. Because the incidents and paraphrases were created together, the 100% result is **not** an independent estimate of accuracy. Some queries reuse incident terminology. I keep that original measurement for comparison, but now also test abstention and a stronger lexical baseline.
 
 ### New benchmark: BM25 vs semantic retrieval

@@ -67,10 +67,20 @@ def ingest(path: str = "knowledge/incidents.txt") -> int:
 def incident_query(service: str, alert: str, description: str) -> str:
     return f"Service: {service}\nAlert: {alert}\nDescription: {description}"
 
-def semantic_search(query: str, top_k: int = 3, threshold: float | None = None) -> list[dict]:
+def effective_threshold(threshold: float | None = None) -> float:
+    """Resolve the API cutoff, including its environment override."""
+    return float(os.getenv("MIN_SIMILARITY", str(DEFAULT_THRESHOLD))) if threshold is None else float(threshold)
+
+
+def filter_matches(matches: list[dict], threshold: float, score_key: str = "similarity") -> list[dict]:
+    """Filter full-precision scores inclusively, preserving retrieval order."""
+    return [match for match in matches if float(match[score_key]) >= threshold]
+
+
+def semantic_candidates(query: str, top_k: int = 3) -> list[dict]:
+    """Retrieve ranked candidates with full-precision scores for cutoff decisions."""
     if not 1 <= top_k <= 20:
         raise ValueError("top_k must be between 1 and 20")
-    cutoff = float(os.getenv("MIN_SIMILARITY", str(DEFAULT_THRESHOLD))) if threshold is None else threshold
     vector = embed(query, "RETRIEVAL_QUERY")
     with connection() as conn:
         register_vector(conn)
@@ -84,9 +94,16 @@ def semantic_search(query: str, top_k: int = 3, threshold: float | None = None) 
         ).fetchall()
     return [
         {"id": r["id"], "title": r["title"], "content": r["content"],
-         "similarity": round(float(r["similarity"]), 5)}
-        for r in rows if float(r["similarity"]) >= cutoff
+         "similarity": float(r["similarity"])}
+        for r in rows
     ]
+
+def semantic_search(query: str, top_k: int = 3, threshold: float | None = None) -> list[dict]:
+    cutoff = effective_threshold(threshold)
+    matches = filter_matches(semantic_candidates(query, top_k), cutoff)
+    # Rounding is only for API presentation, after the acceptance decision.
+    return [{**match, "similarity": round(match["similarity"], 5)} for match in matches]
+
 
 def keyword_search(query: str, records: list[dict] | None = None, top_k: int = 3) -> list[dict]:
     """Original substring-matching baseline: first matching record, no semantic ranking."""

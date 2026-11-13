@@ -1,7 +1,8 @@
 """Retrieval benchmark with no-answer cases, BM25 and dev-only calibration.
 
-For each method, threshold selection uses only the development split. Test rows
-are never consulted for calibration. All cases are synthetic, and their labels
+Semantic reports default to the effective API cutoff. Threshold experiments
+require calibration mode; BM25 defaults to calibration as it is not an API path.
+Calibration uses only development rows. All cases are synthetic, and their labels
 were authored for this demo; results are not an independent production estimate.
 """
 import argparse
@@ -12,7 +13,7 @@ from pathlib import Path
 import re
 import statistics
 
-from retrieval import parse_knowledge, semantic_search
+from retrieval import effective_threshold, filter_matches, parse_knowledge, semantic_candidates
 from evaluation import case_query
 
 TOKENS = re.compile(r"[a-z0-9]+")
@@ -84,7 +85,7 @@ def score_rows(cases: list[dict], method: str, records: list[dict]) -> list[dict
             # distribution visible even if the application would abstain.
             hits = [
                 {"title": hit["title"], "score": float(hit["similarity"])}
-                for hit in semantic_search(query, top_k=3, threshold=-1.0)
+                for hit in semantic_candidates(query, top_k=3)
             ]
         rows.append({
             "query": query, "split": case["split"],
@@ -98,7 +99,7 @@ def score_rows(cases: list[dict], method: str, records: list[dict]) -> list[dict
 
 
 def apply_threshold(row: dict, threshold: float) -> list[dict]:
-    return [h for h in row["hits"] if h["score"] >= threshold]
+    return filter_matches(row["hits"], threshold, score_key="score")
 
 
 def report_metrics(rows: list[dict], threshold: float) -> dict:
@@ -187,18 +188,31 @@ def distribution(values: list[float]) -> dict:
     }
 
 
-def summarize(rows: list[dict], method: str) -> dict:
+def summarize(rows: list[dict], method: str, mode: str | None = None) -> dict:
     dev = [r for r in rows if r["split"] == "dev"]
     test = [r for r in rows if r["split"] == "test"]
-    threshold, dev_metrics = choose_threshold(dev)
+    mode = mode or ("production" if method == "semantic" else "calibration")
+    if mode not in ("production", "calibration"):
+        raise ValueError("Mode must be production or calibration")
+    if mode == "production" and method != "semantic":
+        raise ValueError("Production mode is only available for the API semantic retriever")
+    if mode == "production":
+        threshold = effective_threshold()
+        dev_metrics = report_metrics(dev, threshold)
+        selection = "effective API MIN_SIMILARITY or default; no calibration"
+        margin = None
+    else:
+        threshold, dev_metrics = choose_threshold(dev)
+        margin = development_margin(dev)
+        selection = ("midpoint of full development separation margin" if margin is not None else
+                     "max development balanced decision accuracy; median tie")
     return {
         "method": method,
         "benchmark": "synthetic, query-level dev/test split, not independent",
-        "threshold": round(threshold, 8),
-        "threshold_selection": ("midpoint of full development separation margin"
-                                if development_margin(dev) is not None else
-                                "max development balanced decision accuracy; median tie"),
-        "dev_margin": development_margin(dev),
+        "mode": mode,
+        "threshold": threshold,
+        "threshold_selection": selection,
+        "dev_margin": margin,
         "dev": dev_metrics,
         "test": report_metrics(test, threshold),
         "test_scores": {
@@ -213,7 +227,8 @@ def summarize(rows: list[dict], method: str) -> dict:
             {
                 "query": r["query"], "expected_title": r["expected_title"],
                 "top1": r["hits"][0]["title"] if r["hits"] else None,
-                "top1_score": round(r["top1_score"], 4),
+                "top1_score": r["top1_score"],
+                "accepted_matches": apply_threshold(r, threshold),
                 "accepted": bool(apply_threshold(r, threshold)),
             }
             for r in test
@@ -222,14 +237,15 @@ def summarize(rows: list[dict], method: str) -> dict:
 
 
 def evaluate(method: str, positive_path: str = "evaluation/cases.json",
-             negative_path: str = "evaluation/negative_cases.json") -> dict:
+             negative_path: str = "evaluation/negative_cases.json",
+             mode: str | None = None) -> dict:
     records = parse_knowledge()
     cases = load_cases(positive_path, negative_path)
     valid_titles = {r["title"] for r in records}
     if any(c["expected_title"] and c["expected_title"] not in valid_titles for c in cases):
         raise ValueError("An expected title is missing from the knowledge corpus")
     rows = score_rows(cases, method, records)
-    summary = summarize(rows, method)
+    summary = summarize(rows, method, mode)
     print(json.dumps(summary, indent=2))
     return summary
 
@@ -237,5 +253,7 @@ def evaluate(method: str, positive_path: str = "evaluation/cases.json",
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--method", choices=["bm25", "semantic"], required=True)
+    parser.add_argument("--mode", choices=["production", "calibration"],
+                        help="Default: production for semantic; calibration for BM25")
     args = parser.parse_args()
-    evaluate(args.method)
+    evaluate(args.method, mode=args.mode)

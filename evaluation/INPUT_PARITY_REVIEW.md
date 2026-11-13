@@ -82,3 +82,49 @@ Both full-suite runs report the same two pre-existing warnings:
 
 No root-cause experiments, threshold fixes, dependency fixes, or baseline-search
 fixes were made. Stop here for review; nothing is merged into main.
+
+## Follow-up: shared cutoff and production reporting
+
+This section supersedes the earlier cutoff/reporting limitations above.
+
+`retrieval.effective_threshold` resolves the default or `MIN_SIMILARITY` override.
+`retrieval.semantic_candidates` returns the same top-three database candidates
+with unrounded scores. `retrieval.filter_matches` is the single inclusive cutoff
+implementation used by both API search and robust evaluation. API scores are
+rounded only after filtering, preserving the API's previous decisions and output
+format. Robust evaluation retains full precision through its decision and reports
+accepted matches explicitly.
+
+Semantic evaluation now defaults to production mode, reports the actual effective
+threshold without rounding it, and does not select a threshold from development
+scores. The simple semantic evaluator also reports its effective threshold.
+Threshold experiments remain available separately:
+
+```sh
+python evaluation_robust.py --method semantic --mode production
+python evaluation_robust.py --method semantic --mode calibration
+```
+
+BM25 remains a calibration-only baseline by default; production mode is rejected
+for BM25 because the API does not use that scoring method. Its selection algorithm
+and test metrics are unchanged; its reported cutoff now retains full precision
+instead of being rounded to eight decimal places.
+
+Validation after this follow-up:
+
+- Full suite with isolated PostgreSQL/pgvector: **40 passed, 0 failed, 0 skipped,
+  2 pre-existing warnings in 1.72s**. Exact output: `cutoff-parity-tests.txt`.
+- Default cutoff and `MIN_SIMILARITY=0.8`: real API and evaluator retain the high
+  and just-above candidates, reject the just-below candidate, and agree on ordering
+  and displayed scores. The rejected candidate rounds to the cutoff, reproducing
+  the former evaluation error if rounding were applied too early.
+- Unit checks cover equality at the cutoff (inclusive), unrounded override reporting,
+  production mode never calling calibration, explicit calibration ignoring the API
+  override, and the simple evaluator reporting the threshold it actually uses.
+- Keyword benchmark output is byte-identical to the prior branch result (1/21).
+  BM25 test metrics remain Hit@1=.6, Hit@3=.7, MRR@3=.65, no-answer rejection=5/6.
+- Knowledge base, keyword implementation, and main.py/Gemini prompt are unchanged.
+- Live Gemini validation remains outstanding: no credential is configured. These
+  tests validate cutoff parity using real database scores with stub embeddings;
+  they do not establish semantic relevance, production accuracy, or realistic
+  service-metadata effects. No new live semantic performance result is claimed.

@@ -25,3 +25,20 @@ def test_evaluation_rejects_invalid_api_payload(field, value):
     payload[field] = value
     with pytest.raises(ValidationError):
         case_query({"incident": payload})
+
+
+def test_simple_semantic_report_uses_effective_api_threshold(monkeypatch, tmp_path, capsys):
+    import json
+    import evaluation
+    monkeypatch.setenv("MIN_SIMILARITY", "0.800000123")
+    calls = []
+    monkeypatch.setattr(evaluation, "semantic_search",
+                        lambda query, top_k, threshold: calls.append(threshold) or [])
+    dataset = tmp_path / "cases.json"
+    dataset.write_text(json.dumps([{"query": "slow checkout", "expected_title": "a"}]))
+    evaluation.evaluate(str(dataset), "semantic")
+    output = capsys.readouterr().out
+    summary = json.loads(output[output.index('\n') + 1:])
+    assert calls == [.800000123]
+    assert summary["mode"] == "production"
+    assert summary["threshold"] == .800000123

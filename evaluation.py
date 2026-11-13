@@ -5,7 +5,7 @@ Do not equate these retrieval metrics with LLM root-cause accuracy.
 import json
 import argparse
 from pathlib import Path
-from retrieval import incident_query, keyword_search, semantic_search
+from retrieval import effective_threshold, incident_query, keyword_search, semantic_search
 from incident_input import Incident, prepare_incident
 
 def case_query(case: dict) -> str:
@@ -35,17 +35,19 @@ def metrics(results: list[tuple[list[str], str]]) -> dict:
 def evaluate(dataset: str, method: str):
     cases = json.loads(Path(dataset).read_text(encoding="utf-8"))
     predictions = []
+    cutoff = effective_threshold() if method == "semantic" else None
     for case in cases:
         query = case_query(case)
         if method == "semantic":
-            hits = semantic_search(query, top_k=3)
+            hits = semantic_search(query, top_k=3, threshold=cutoff)
         else:
             hits = keyword_search(query)
         titles = [hit["title"] for hit in hits]
         predictions.append((titles, case["expected_title"]))
         print(json.dumps({"query": query, "predicted": titles, "expected": case["expected_title"]}))
     summary = metrics(predictions)
-    print(json.dumps({"method": method, **summary}, indent=2))
+    metadata = {"mode": "production", "threshold": cutoff} if method == "semantic" else {}
+    print(json.dumps({"method": method, **metadata, **summary}, indent=2))
     return summary
 
 if __name__ == "__main__":

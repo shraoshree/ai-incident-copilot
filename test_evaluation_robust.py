@@ -67,3 +67,46 @@ def test_abstention_and_metric_distinguish_no_answer():
 def test_score_distribution():
     assert distribution([]) == {"count": 0}
     assert distribution([.1, .2, .3])["median"] == .2
+
+
+@pytest.mark.parametrize("cutoff", [.65821, .8])
+def test_shared_filter_uses_full_precision_and_inclusive_boundary(cutoff):
+    from retrieval import filter_matches
+    hits = [{"title": "above", "score": cutoff + .000001},
+            {"title": "equal", "score": cutoff},
+            {"title": "below", "score": cutoff - .000001}]
+    assert round(hits[-1]["score"], 5) == cutoff
+    expected = hits[:2]
+    assert filter_matches(hits, cutoff, score_key="score") == expected
+    assert apply_threshold({"hits": hits}, cutoff) == expected
+
+
+def test_production_report_uses_api_override_without_calibration(monkeypatch):
+    import evaluation_robust
+    monkeypatch.setenv("MIN_SIMILARITY", "0.800000123")
+    monkeypatch.setattr(evaluation_robust, "choose_threshold",
+                        lambda rows: pytest.fail("Production must not calibrate"))
+    rows = [{"query": "q", "split": split, "expected_title": label,
+             "hits": [{"title": "a", "score": .8}], "top1_score": .8,
+             "correct_score": .8 if label else None}
+            for split in ("dev", "test") for label in ("a", None)]
+    report = summarize(rows, "semantic")
+    assert report["threshold"] == .800000123
+    assert report["mode"] == "production"
+    assert report["test"]["positive_coverage"] == 0
+    assert report["test"]["negative_abstention_rate"] == 1
+    assert all(not example["accepted"] for example in report["test_examples"])
+    assert report["dev_margin"] is None
+
+
+def test_semantic_calibration_is_explicit_and_ignores_api_override(monkeypatch):
+    monkeypatch.setenv("MIN_SIMILARITY", ".99")
+    rows = [{"query": "q", "split": split, "expected_title": label,
+             "hits": [{"title": "a", "score": score}], "top1_score": score,
+             "correct_score": score if label else None}
+            for split in ("dev", "test") for label, score in (("a", .8), (None, .2))]
+    report = summarize(rows, "semantic", mode="calibration")
+    assert report["mode"] == "calibration"
+    assert report["threshold"] == pytest.approx(.5)
+    with pytest.raises(ValueError, match="only available"):
+        summarize(rows, "bm25", mode="production")
