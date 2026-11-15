@@ -162,6 +162,22 @@ docker compose exec api python retrieval.py ingest
 
 The `.env.example` database URL uses `localhost` for running Python on your computer. Docker Compose overrides it with the database service hostname when running the API in a container.
 
+### Run the React demo
+
+With the FastAPI server running on port 8000, start the TypeScript frontend:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Open http://localhost:5173 and enter the value of `COPILOT_API_KEY` in the form.
+Submit a sample incident to see its saved ID, analysis source, investigation
+steps, and retrieval matches. The local Vite server proxies the submission
+to FastAPI. The key is supplied per request and is never bundled or saved in
+browser storage. Run `npm run build` in `frontend` to type-check and build the UI.
+
 ### Try an incident
 
 ```bash
